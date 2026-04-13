@@ -5,7 +5,7 @@
 ## 部署步驟
 
 ### 0. 先決條件：IAM 開發帳號權限檢查
-因為你採取非常棒的安全實務（Root 只開權限，使用獨立的 IAM 帳號開發），在你用該開發者帳號登入 AWS Console 前，**請確保 Root 帳號有賦予這個開發帳號以下權限**：
+採取安全實務（Root 只開權限，使用獨立的 IAM 帳號開發），在你用該開發者帳號登入 AWS Console 前，**請確保 Root 帳號有賦予這個開發帳號以下權限**：
 1. 一定能建 Lambda 的權限（例如 `AWSLambda_FullAccess`）。
 2. 一定能建 API Gateway 的權限（例如 `AmazonAPIGatewayAdministrator`）。
 3. **最容易漏掉的：建 IAM Role 的權限**（例如具備 `iam:CreateRole` 與 `iam:AttachRolePolicy`）。這是因為當你在網頁點擊「建立 Lambda」時，AWS 會自動幫這支程式創建一個專屬的「執行角色 (Execution Role)」，好讓它可以合法寫 Log 到 CloudWatch 裡面。
