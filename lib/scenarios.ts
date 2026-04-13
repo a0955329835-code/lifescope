@@ -23,6 +23,8 @@ export interface Scenario {
     investReturn: number;
     maintenanceRate: number;
     yearsToCompare: number;
+    initialCapital: number;
+    houseAppreciationRate: number;
   };
 }
 
