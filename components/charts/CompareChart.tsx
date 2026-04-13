@@ -30,7 +30,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={formattedData}
-          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
@@ -41,6 +41,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
             dy={10}
           />
           <YAxis
+            width={75}
             axisLine={false}
             tickLine={false}
             tickFormatter={(val) => `${val} 萬`}

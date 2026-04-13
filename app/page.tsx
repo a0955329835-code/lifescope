@@ -99,7 +99,6 @@ export default function HomePage() {
                 <h3 className="font-semibold text-xl mb-2">蒙地卡羅壓測</h3>
                 <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                   真實世界不是固定報酬率。我們用隨機模擬幫你跑 1,000 次平行宇宙，告訴你破產的機率有多高。
-                  <span className="inline-block mt-1 text-sm px-2 py-0.5 rounded-full" style={{ background: "var(--accent-primary-dim)", color: "var(--accent-primary)" }}>即將推出</span>
                 </p>
               </div>
             </div>

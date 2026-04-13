@@ -14,7 +14,7 @@ export default function TermsOfServicePage() {
               <section>
                 <h2 className="text-lg font-semibold mb-2" style={{ color: "var(--text-primary)" }}>1. 服務聲明</h2>
                 <p className="leading-relaxed">
-                  本平台（LifeScope）提供之所有試算工具、圖表與數據結果，均為基於數學模型與歷史數據之模擬運算，僅供使用者個人財務規劃之參考。
+                  本平台（LifeScope）為開發者獨立建置之非營利開源技術專案。提供之所有試算工具、圖表與數據結果，均為基於數學模型與歷史數據之模擬運算，完全免費，且僅供使用者個人財務規劃與技術交流之參考。
                 </p>
               </section>
 
@@ -35,14 +35,14 @@ export default function TermsOfServicePage() {
               <section>
                 <h2 className="text-lg font-semibold mb-2" style={{ color: "var(--text-primary)" }}>4. 服務修改與終止</h2>
                 <p className="leading-relaxed">
-                  我們保留隨時修改、暫停或終止平台部分或全部免費與付費功能之權利，且不需事前承擔通知義務。
+                  作為個人開源作品，我們保留隨時修改、暫停或終止平台部分或全部功能之權利，且不需事前承擔通知義務。平台不保證服務之永久存續與伺服器之穩定性。
                 </p>
               </section>
             </div>
             
             <div className="mt-8 pt-6 border-t border-dashed" style={{ borderColor: "var(--border-subtle)" }}>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                最後更新日期：2024年4月 (此為測試站台之預設條款)
+                最後更新日期：2024年4月
               </p>
             </div>
           </div>
