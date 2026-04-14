@@ -42,7 +42,7 @@ export default function TermsOfServicePage() {
             
             <div className="mt-8 pt-6 border-t border-dashed" style={{ borderColor: "var(--border-subtle)" }}>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                最後更新日期：2024年4月
+                最後更新日期：2026年4月
               </p>
             </div>
           </div>

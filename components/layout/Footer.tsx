@@ -66,7 +66,7 @@ export default function Footer() {
             </p>
           </div>
           <p className="text-xs mt-4 text-center" style={{ color: "var(--text-muted)" }}>
-            © {new Date().getFullYear()} LifeScope. All rights reserved.
+            © {new Date().getFullYear()} LifeScope. Open source under MIT License.
           </p>
         </div>
       </div>

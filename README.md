@@ -27,7 +27,7 @@
 ## 🛠️ 技術棧 (Tech Stack)
 
 ### Frontend (User Interface)
-* **Framework**: React 18 + Next.js 14 (App Router)
+* **Framework**: React 19 + Next.js 16 (App Router)
 * **Styling**: Tailwind CSS + 原生 CSS Variables (Design Tokens)
 * **Visualization**: Recharts 
 * **State Management**: React Hooks (useState, useMemo, useCallback) + Client-side LocalStorage Persistence
