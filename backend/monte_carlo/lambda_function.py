@@ -49,6 +49,12 @@ def lambda_handler(event, context):
         volatility = max(0, min(float(data.get('volatility', 15.0)), 100.0)) / 100.0
         inflation_mean = max(0, min(float(data.get('inflationMean', 2.0)), 50.0)) / 100.0
         
+        # --- Pro Upgrade: Advanced Risk & Strategy Parameters ---
+        jump_probability = max(0.0, min(float(data.get('jumpProbability', 0.0)), 100.0)) / 100.0
+        jump_impact = max(0.0, min(float(data.get('jumpImpact', 20.0)), 100.0)) / 100.0
+        is_dynamic = bool(data.get('isDynamic', False))
+        dynamic_ratio = max(0.0, min(float(data.get('dynamicRatio', 20.0)), 100.0)) / 100.0
+        
         # --- Security: Black Swan events with array length cap ---
         raw_events = data.get('blackSwanEvents', [])
         if not isinstance(raw_events, list):
@@ -85,10 +91,20 @@ def lambda_handler(event, context):
         # Using constant inflation for the baseline spending power is standard approach
         yearly_withdrawals = base_annual_withdrawal * np.power((1 + inflation_mean), np.arange(years))
         
+        # Track previous year's market returns for dynamic spending
+        prev_market_returns = np.zeros(num_simulations)
+        
         for y in range(1, years + 1):
             # Generate random returns for this year across all simulations
             # Using Normal distribution. (Lognormal could also be used for GBM)
             random_returns = np.random.normal(loc=expected_return, scale=volatility, size=num_simulations)
+            
+            # --- Pro Upgrade: Jump Diffusion (Random Black Swan) ---
+            if jump_probability > 0:
+                # Generate a boolean mask where random value < jump_probability
+                has_jump = np.random.rand(num_simulations) < jump_probability
+                # Subtract jump_impact from returns for those specific simulations
+                random_returns -= has_jump * jump_impact
             
             # Apply Black Swan event if specified in the crash map
             if y in crash_map:
@@ -99,8 +115,15 @@ def lambda_handler(event, context):
             # Previous year's balance
             prev_balance = paths[y - 1]
             
+            # --- Pro Upgrade: Dynamic Spending Strategy ---
+            # Start with the baseline inflation-adjusted withdrawal for this year
+            withdrawal_this_year = np.full(num_simulations, yearly_withdrawals[y - 1])
+            
+            if is_dynamic and y > 1:
+                # If market return was negative last year, reduce withdrawal by dynamic_ratio
+                withdrawal_this_year[prev_market_returns < 0] *= (1.0 - dynamic_ratio)
+            
             # Calculate new balance: (Balance + Contribution - Withdrawal) * (1 + Return)
-            withdrawal_this_year = yearly_withdrawals[y - 1]
             cashflow = annual_contribution - withdrawal_this_year
             
             new_balance = (prev_balance + cashflow) * (1 + random_returns)
@@ -109,6 +132,7 @@ def lambda_handler(event, context):
             new_balance = np.maximum(new_balance, 0)
             
             paths[y] = new_balance
+            prev_market_returns = random_returns
             
         # Calculate statistics
         # A simulation is "ruined" if ending balance is exactly 0

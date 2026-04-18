@@ -164,6 +164,10 @@ function SimulatorContent() {
     scenarioId: "custom",
     blackSwanYear: 0,
     blackSwanDrop: 30,
+    jumpProbability: 0,
+    jumpImpact: 20,
+    isDynamic: false,
+    dynamicRatio: 20,
   });
   const [mcResult, setMcResult] = useState<any>(null);
   const [isLoadingMC, setIsLoadingMC] = useState(false);
@@ -190,7 +194,11 @@ function SimulatorContent() {
         expectedReturn: basicParams.annualReturn,
         volatility: mcParams.volatility,
         inflationMean: basicParams.inflationRate,
-        blackSwanEvents: scenarioEvents
+        blackSwanEvents: scenarioEvents,
+        jumpProbability: mcParams.jumpProbability,
+        jumpImpact: mcParams.jumpImpact,
+        isDynamic: mcParams.isDynamic,
+        dynamicRatio: mcParams.dynamicRatio
       };
 
       const API_URL = process.env.NEXT_PUBLIC_MC_API_URL;
@@ -252,6 +260,7 @@ function SimulatorContent() {
       name: saveName.trim(),
       params: basicParams,
       housingParams,
+      mcParams,
     });
     if (result) {
       setScenarios(getScenarios());
@@ -265,6 +274,9 @@ function SimulatorContent() {
     setBasicParams(scenario.params);
     if (scenario.housingParams) {
       setHousingParams(scenario.housingParams);
+    }
+    if (scenario.mcParams) {
+      setMcParams(scenario.mcParams);
     }
     setSaveMessage(`✅ 已載入「${scenario.name}」`);
     setTimeout(() => setSaveMessage(""), 2000);
@@ -473,6 +485,46 @@ function SimulatorContent() {
                           )}
                         </div>
                       )}
+                    </div>
+
+                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                        <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
+                        Pro 進階參數與策略 (Advanced Options)
+                      </h3>
+
+                      <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(99, 102, 241, 0.05)", border: "1px dashed rgba(99, 102, 241, 0.2)" }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                            跳躍擴散模型 (每年隨機崩盤)
+                          </label>
+                        </div>
+                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+                          💡 除上述指定劇本外，每年額外觸發無預警黑天鵝的機率。
+                        </p>
+                        <SliderInput id="jumpProbability" label="每年發生機率" value={mcParams.jumpProbability} onChange={(v) => updateMC("jumpProbability", v)} min={0} max={20} step={1} unit="%" hint="0 代表關閉隨機黑天鵝" />
+                        {mcParams.jumpProbability > 0 && (
+                          <SliderInput id="jumpImpact" label="單次隨機崩盤跌幅" value={mcParams.jumpImpact} onChange={(v) => updateMC("jumpImpact", v)} min={5} max={50} step={5} unit="%" />
+                        )}
+                      </div>
+
+                      <div className="p-4 rounded-xl mb-2" style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px dashed rgba(16, 185, 129, 0.2)" }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                            動態提領防禦 (Dynamic Spending)
+                          </label>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={mcParams.isDynamic} onChange={(e) => updateMC("isDynamic", e.target.checked)} />
+                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                          </label>
+                        </div>
+                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+                          🛡️ 模擬真實人生避險行為：若前一年市場報酬為負數，則當年按比例縮減生活費。可高度拯救破產率！
+                        </p>
+                        {mcParams.isDynamic && (
+                          <SliderInput id="dynamicRatio" label="當年度縮減提領比例" value={mcParams.dynamicRatio} onChange={(v) => updateMC("dynamicRatio", v)} min={5} max={50} step={5} unit="%" />
+                        )}
+                      </div>
                     </div>
 
                     <button

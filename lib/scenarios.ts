@@ -26,6 +26,17 @@ export interface Scenario {
     initialCapital: number;
     houseAppreciationRate: number;
   };
+  mcParams?: {
+    phase: string;
+    volatility: number;
+    scenarioId: string;
+    blackSwanYear: number;
+    blackSwanDrop: number;
+    jumpProbability: number;
+    jumpImpact: number;
+    isDynamic: boolean;
+    dynamicRatio: number;
+  };
 }
 
 const STORAGE_KEY = 'lifescope_scenarios';
