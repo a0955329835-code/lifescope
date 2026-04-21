@@ -9,6 +9,7 @@ export interface BasicParams {
   annualReturn: number;       // 年化報酬率 (%)
   investmentYears: number;    // 投資年數
   inflationRate: number;      // 通膨率 (%)
+  salaryGrowthRate: number;   // 年調薪幅度 (%)
 }
 
 export interface HousingParams {
@@ -41,6 +42,23 @@ export interface HousingCompareData {
   buyCumCost: number;      // 買房方案累計住居成本
 }
 
+export interface LifeStage {
+  endYear: number;
+  familySize: number; // 1-6 人
+}
+
+export const FAMILY_MULTIPLIERS: Record<number, number> = {
+  1: 1.0, 2: 1.6, 3: 2.2, 4: 2.8, 5: 3.4, 6: 4.0
+};
+
+function getFamilyMultiplier(year: number, lifeStages?: LifeStage[]): number {
+  if (!lifeStages || lifeStages.length === 0) return 1.0;
+  for (const stage of lifeStages) {
+    if (year <= stage.endYear) return FAMILY_MULTIPLIERS[stage.familySize] || 1.0;
+  }
+  return FAMILY_MULTIPLIERS[lifeStages[lifeStages.length - 1]?.familySize] || 1.0;
+}
+
 // 格式化金額為台幣格式
 export function formatTWD(amount: number): string {
   if (Math.abs(amount) >= 1e8) {
@@ -61,13 +79,14 @@ export function formatNumber(num: number): string {
  * 基礎複利試算
  * 每月投入固定金額，以年化報酬率複利成長
  */
-export function calculateProjection(params: BasicParams): YearlyData[] {
+export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[]): YearlyData[] {
   const {
     currentAssets,
     monthlyInvestment,
     annualReturn,
     investmentYears,
     inflationRate,
+    salaryGrowthRate = 0,
   } = params;
 
   const monthlyRate = annualReturn / 100 / 12;
@@ -75,7 +94,6 @@ export function calculateProjection(params: BasicParams): YearlyData[] {
   let assets = currentAssets;
   let totalInvested = currentAssets;
 
-    // Year 0
   data.push({
     year: 0,
     assets: Math.round(assets),
@@ -85,12 +103,14 @@ export function calculateProjection(params: BasicParams): YearlyData[] {
   });
 
   for (let year = 1; year <= investmentYears; year++) {
+    const salaryFactor = Math.pow(1 + salaryGrowthRate / 100, year - 1);
+    const adjustedInvestment = monthlyInvestment * salaryFactor;
+
     for (let month = 0; month < 12; month++) {
-      assets = assets * (1 + monthlyRate) + monthlyInvestment;
-      totalInvested += monthlyInvestment;
+      assets = assets * (1 + monthlyRate) + adjustedInvestment;
+      totalInvested += adjustedInvestment;
     }
-    
-    // 計算通膨折現因子
+
     const discountFactor = Math.pow(1 + inflationRate / 100, year);
 
     data.push({
@@ -219,18 +239,22 @@ export function calculateHousingCompare(params: HousingParams): HousingCompareDa
  * 計算達成財務自由所需年數
  * 財務自由 = 資產 × 4% 被動收入 >= 年支出
  */
-export function calculateFIREAge(params: BasicParams): number | null {
-  const { currentAssets, monthlyInvestment, monthlyExpense, annualReturn, inflationRate } = params;
+export function calculateFIREAge(params: BasicParams, lifeStages?: LifeStage[]): number | null {
+  const { currentAssets, monthlyInvestment, monthlyExpense, annualReturn, inflationRate, salaryGrowthRate = 0 } = params;
   const monthlyRate = annualReturn / 100 / 12;
   const yearlyExpense = monthlyExpense * 12;
   let assets = currentAssets;
 
   for (let year = 1; year <= 100; year++) {
+    const salaryFactor = Math.pow(1 + salaryGrowthRate / 100, year - 1);
+    const adjustedInvestment = monthlyInvestment * salaryFactor;
+
     for (let month = 0; month < 12; month++) {
-      assets = assets * (1 + monthlyRate) + monthlyInvestment;
+      assets = assets * (1 + monthlyRate) + adjustedInvestment;
     }
-    // 4% 法則：年被動收入 = 資產 × 4%，考慮通膨調整
-    const adjustedExpense = yearlyExpense * Math.pow(1 + inflationRate / 100, year);
+    // 4% 法則：年被動收入 = 資產 × 4%，考慮通膨 × 家庭規模乘數
+    const familyMult = getFamilyMultiplier(year, lifeStages);
+    const adjustedExpense = yearlyExpense * familyMult * Math.pow(1 + inflationRate / 100, year);
     if (assets * 0.04 >= adjustedExpense) {
       return year;
     }

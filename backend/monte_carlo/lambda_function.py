@@ -55,6 +55,14 @@ def lambda_handler(event, context):
         is_dynamic = bool(data.get('isDynamic', False))
         dynamic_ratio = max(0.0, min(float(data.get('dynamicRatio', 20.0)), 100.0)) / 100.0
         
+        # --- V2: Life Stages & Salary Growth ---
+        salary_growth_rate = max(0.0, min(float(data.get('salaryGrowthRate', 0.0)), 20.0)) / 100.0
+        raw_stages = data.get('lifeStages', [])
+        if not isinstance(raw_stages, list):
+            raw_stages = []
+        life_stages = raw_stages[:10]
+        FAMILY_MULTIPLIERS = {1: 1.0, 2: 1.6, 3: 2.2, 4: 2.8, 5: 3.4, 6: 4.0}
+        
         # --- Security: Black Swan events with array length cap ---
         raw_events = data.get('blackSwanEvents', [])
         if not isinstance(raw_events, list):
@@ -87,9 +95,31 @@ def lambda_handler(event, context):
         paths = np.zeros((years + 1, num_simulations))
         paths[0] = initial_assets
         
-        # Track withdrawals with deterministic inflation (for simplicity & performance)
-        # Using constant inflation for the baseline spending power is standard approach
-        yearly_withdrawals = base_annual_withdrawal * np.power((1 + inflation_mean), np.arange(years))
+        # Build family multiplier array from life stages
+        family_mult_array = np.ones(years)
+        prev_end = 0
+        for stage in life_stages:
+            try:
+                end_yr = max(1, min(int(stage.get('endYear', years)), years))
+                fam_size = max(1, min(int(stage.get('familySize', 1)), 6))
+                mult = FAMILY_MULTIPLIERS.get(fam_size, 1.0)
+                family_mult_array[prev_end:min(end_yr, years)] = mult
+                prev_end = end_yr
+            except (ValueError, TypeError):
+                continue
+        if prev_end < years and life_stages:
+            try:
+                last_size = max(1, min(int(life_stages[-1].get('familySize', 1)), 6))
+                family_mult_array[prev_end:] = FAMILY_MULTIPLIERS.get(last_size, 1.0)
+            except (ValueError, TypeError):
+                pass
+        
+        # Withdrawals: inflation x family size multiplier
+        yearly_withdrawals = base_annual_withdrawal * np.power((1 + inflation_mean), np.arange(years)) * family_mult_array
+        
+        # Salary growth: contributions increase over career
+        salary_factors = np.power((1 + salary_growth_rate), np.arange(years))
+        yearly_contributions = annual_contribution * salary_factors
         
         # Track previous year's market returns for dynamic spending
         prev_market_returns = np.zeros(num_simulations)
@@ -124,7 +154,7 @@ def lambda_handler(event, context):
                 withdrawal_this_year[prev_market_returns < 0] *= (1.0 - dynamic_ratio)
             
             # Calculate new balance: (Balance + Contribution - Withdrawal) * (1 + Return)
-            cashflow = annual_contribution - withdrawal_this_year
+            cashflow = yearly_contributions[y - 1] - withdrawal_this_year
             
             new_balance = (prev_balance + cashflow) * (1 + random_returns)
             

@@ -12,6 +12,7 @@ export interface Scenario {
     annualReturn: number;
     investmentYears: number;
     inflationRate: number;
+    salaryGrowthRate: number;
   };
   housingParams?: {
     housePrice: number;
@@ -37,6 +38,7 @@ export interface Scenario {
     isDynamic: boolean;
     dynamicRatio: number;
   };
+  lifeStages?: { endYear: number; familySize: number }[];
 }
 
 const STORAGE_KEY = 'lifescope_scenarios';

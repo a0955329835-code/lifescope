@@ -10,6 +10,8 @@ import CompareChart from "@/components/charts/CompareChart";
 import {
   BasicParams,
   HousingParams,
+  LifeStage,
+  FAMILY_MULTIPLIERS,
   calculateProjection,
   calculateHousingCompare,
   calculateFIREAge,
@@ -39,6 +41,16 @@ const CRISIS_SCENARIOS = [
   { id: "dotcom_2008", name: "千禧年雙重打擊 (網路泡沫 + 金融海嘯)", events: [{ year: 0, drop: 40 }, { year: 8, drop: 50 }], description: "模擬爆發當年遭遇網路泡沫 (-40%)，好不容易存活了 8 年，立刻又遭遇金融海嘯 (-50%) 的煉獄期。" },
   { id: "great_depression", name: "1929 經濟大恐慌 (連跌三年重創)", events: [{ year: 0, drop: 30 }, { year: 1, drop: 25 }, { year: 2, drop: 25 }], description: "模擬美股史上最慘烈的連環熊市，爆發後連續三年分別遭遇 -30%、-25%、-25% 的毀滅性連擊。" },
   { id: "covid_inflation", name: "新冠恐慌與通膨緊縮 (短期雙跌)", events: [{ year: 0, drop: 30 }, { year: 2, drop: 25 }], description: "模擬爆發當年引發疫情式閃崩 (-30%)，短暫恢復後，短短兩年內隨即迎來通膨緊縮股災 (-25%)。" },
+];
+
+const STAGE_LABELS = ["🧒 年輕養成期", "👨‍👩‍👧 家庭壯年期", "🧓 退休空巢期"];
+const FAMILY_OPTIONS = [
+  { value: 1, label: "👤 單身 (1人)" },
+  { value: 2, label: "👥 兩人世界" },
+  { value: 3, label: "👨‍👩‍👧 核心家庭 (3人)" },
+  { value: 4, label: "👨‍👩‍👧‍👦 四口之家" },
+  { value: 5, label: "🏡 大家庭 (5人)" },
+  { value: 6, label: "🏡 三代同堂 (6人+)" },
 ];
 
 function SliderInput({
@@ -137,7 +149,15 @@ function SimulatorContent() {
     annualReturn: 7,
     investmentYears: 30,
     inflationRate: 2,
+    salaryGrowthRate: 3,
   });
+
+  // Life stages (global)
+  const [lifeStages, setLifeStages] = useState<LifeStage[]>([
+    { endYear: 10, familySize: 1 },
+    { endYear: 30, familySize: 3 },
+    { endYear: 50, familySize: 2 },
+  ]);
 
   // Housing params
   const [housingParams, setHousingParams] = useState<HousingParams>({
@@ -198,7 +218,9 @@ function SimulatorContent() {
         jumpProbability: mcParams.jumpProbability,
         jumpImpact: mcParams.jumpImpact,
         isDynamic: mcParams.isDynamic,
-        dynamicRatio: mcParams.dynamicRatio
+        dynamicRatio: mcParams.dynamicRatio,
+        lifeStages: lifeStages,
+        salaryGrowthRate: basicParams.salaryGrowthRate
       };
 
       const API_URL = process.env.NEXT_PUBLIC_MC_API_URL;
@@ -229,9 +251,9 @@ function SimulatorContent() {
   }, []);
 
   // Compute results
-  const projectionData = useMemo(() => calculateProjection(basicParams), [basicParams]);
+  const projectionData = useMemo(() => calculateProjection(basicParams, lifeStages), [basicParams, lifeStages]);
   const housingData = useMemo(() => calculateHousingCompare(housingParams), [housingParams]);
-  const fireYears = useMemo(() => calculateFIREAge(basicParams), [basicParams]);
+  const fireYears = useMemo(() => calculateFIREAge(basicParams, lifeStages), [basicParams, lifeStages]);
 
   const computedMortgage = useMemo(() => {
     const downPayment = housingParams.housePrice * (housingParams.downPaymentPercent / 100);
@@ -261,6 +283,7 @@ function SimulatorContent() {
       params: basicParams,
       housingParams,
       mcParams,
+      lifeStages,
     });
     if (result) {
       setScenarios(getScenarios());
@@ -277,6 +300,9 @@ function SimulatorContent() {
     }
     if (scenario.mcParams) {
       setMcParams(scenario.mcParams);
+    }
+    if (scenario.lifeStages) {
+      setLifeStages(scenario.lifeStages);
     }
     setSaveMessage(`✅ 已載入「${scenario.name}」`);
     setTimeout(() => setSaveMessage(""), 2000);
@@ -350,6 +376,31 @@ function SimulatorContent() {
                       <SliderInput id="investmentYears" label="投資年數" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
                       <SliderInput id="annualReturn" label="年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={20} step={0.5} unit="%" hint="如台股 0050 等大盤型 ETF 歷史平均約 6~8%" />
                       <SliderInput id="inflationRate" label="通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.5} unit="%" hint="台灣長期平均通膨率約 1.5~2%" />
+                      <SliderInput id="salaryGrowthRate" label="年調薪幅度" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={10} step={0.5} unit="%" hint="工作期間的平均年薪漲幅，含升遷效應約 3~5%" />
+                    </div>
+
+                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                        <span className="w-1.5 h-4 rounded-full bg-violet-500" />
+                        🧬 人生路徑發展 (Life Path)
+                      </h3>
+                      <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+                        設定不同階段的家庭規模，系統自動套用經濟學遞減開支模型，影響 FIRE 與蒙地卡羅的支出預測。
+                      </p>
+                      {lifeStages.map((stage, i) => (
+                        <div key={i} className="p-3 rounded-xl mb-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
+                          <div className="text-sm font-medium mb-2" style={{ color: "var(--text-primary)" }}>{STAGE_LABELS[i]}</div>
+                          <div className="flex gap-2 items-center mb-1">
+                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>至第</label>
+                            <input type="number" value={stage.endYear} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], endYear: Math.max(1, Math.min(50, Number(e.target.value)))}; setLifeStages(v); }} className="input-field !w-16 !py-1 text-sm text-center" min={1} max={50} />
+                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>年</label>
+                            <select value={stage.familySize} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], familySize: Number(e.target.value)}; setLifeStages(v); }} className="flex-1 p-1.5 rounded-lg border text-xs appearance-none" style={{ background: "var(--bg-primary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}>
+                              {FAMILY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="text-xs" style={{ color: "var(--text-muted)" }}>開支乘數：{FAMILY_MULTIPLIERS[stage.familySize]}x</div>
+                        </div>
+                      ))}
                     </div>
                   </>
                 ) : activeTab === "housing" ? (
