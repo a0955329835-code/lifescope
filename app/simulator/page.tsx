@@ -363,45 +363,16 @@ function SimulatorContent() {
                       <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "var(--accent-primary-dim)", color: "var(--accent-primary)" }}>⚙</span>
                       現況與收支設定
                     </h2>
-                    <SliderInput id="currentAssets" label="現有資產" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} min={0} max={150000000} step={500000} unit="元" />
+                    <div className="mb-4 text-xs" style={{ color: "var(--text-muted)" }}>
+                      💡 此設定將作為財富累積與 FIRE 退休計畫的基準。
+                    </div>
                     <SliderInput id="monthlyIncome" label="月收入" value={basicParams.monthlyIncome} onChange={(v) => updateBasic("monthlyIncome", v)} min={0} max={2000000} step={5000} unit="元" />
                     <SliderInput id="monthlyExpense" label="月支出" value={basicParams.monthlyExpense} onChange={(v) => updateBasic("monthlyExpense", v)} min={0} max={1000000} step={5000} unit="元" />
                     <SliderInput id="monthlyInvestment" label="月投資額" value={basicParams.monthlyInvestment} onChange={(v) => updateBasic("monthlyInvestment", v)} min={0} max={1000000} step={5000} unit="元" />
 
-                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
-                        <span className="w-1.5 h-4 rounded-full" style={{ background: "var(--accent-primary)" }} />
-                        市場預估參數
-                      </h3>
-                      <SliderInput id="investmentYears" label="投資年數" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
-                      <SliderInput id="annualReturn" label="年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={20} step={0.5} unit="%" hint="如台股 0050 等大盤型 ETF 歷史平均約 6~8%" />
-                      <SliderInput id="inflationRate" label="通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.5} unit="%" hint="台灣長期平均通膨率約 1.5~2%" />
-                      <SliderInput id="salaryGrowthRate" label="年調薪幅度" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={10} step={0.5} unit="%" hint="工作期間的平均年薪漲幅，含升遷效應約 3~5%" />
-                    </div>
 
-                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
-                        <span className="w-1.5 h-4 rounded-full bg-violet-500" />
-                        🧬 人生路徑發展 (Life Path)
-                      </h3>
-                      <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-                        設定不同階段的家庭規模，系統自動套用經濟學遞減開支模型，影響 FIRE 與蒙地卡羅的支出預測。
-                      </p>
-                      {lifeStages.map((stage, i) => (
-                        <div key={i} className="p-3 rounded-xl mb-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
-                          <div className="text-sm font-medium mb-2" style={{ color: "var(--text-primary)" }}>{STAGE_LABELS[i]}</div>
-                          <div className="flex gap-2 items-center mb-1">
-                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>至第</label>
-                            <input type="number" value={stage.endYear} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], endYear: Math.max(1, Math.min(50, Number(e.target.value)))}; setLifeStages(v); }} className="input-field !w-16 !py-1 text-sm text-center" min={1} max={50} />
-                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>年</label>
-                            <select value={stage.familySize} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], familySize: Number(e.target.value)}; setLifeStages(v); }} className="flex-1 p-1.5 rounded-lg border text-xs appearance-none" style={{ background: "var(--bg-primary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}>
-                              {FAMILY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                          </div>
-                          <div className="text-xs" style={{ color: "var(--text-muted)" }}>開支乘數：{FAMILY_MULTIPLIERS[stage.familySize]}x</div>
-                        </div>
-                      ))}
-                    </div>
+
+
                   </>
                 ) : activeTab === "housing" ? (
                   <>
@@ -441,6 +412,9 @@ function SimulatorContent() {
                       </h3>
                       <SliderInput id="monthlyRent" label="預計租屋月租金" value={housingParams.monthlyRent} onChange={(v) => updateHousing("monthlyRent", v)} min={5000} max={500000} step={5000} unit="元" />
                       <SliderInput id="rentIncreaseRate" label="年租金漲幅" value={housingParams.rentIncreaseRate} onChange={(v) => updateHousing("rentIncreaseRate", v)} min={0} max={5} step={0.5} unit="%" />
+                      <div className="mt-4 text-[10px] opacity-40 italic" style={{ color: "var(--text-muted)" }}>
+                        ＊此比擬模式專注於房地產財務路徑，暫不連動人生階段預測。
+                      </div>
                     </div>
                   </>
                 ) : activeTab === "mc" ? (
@@ -475,7 +449,7 @@ function SimulatorContent() {
                       </div>
                     )}
 
-                    <SliderInput id="currentAssets" label="現有總資產" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} min={0} max={150000000} step={500000} unit="元" />
+
 
                     {mcParams.phase === "accumulation" ? (
                       <SliderInput id="monthlyInvestment" label="每月繼續投資" value={basicParams.monthlyInvestment} onChange={(v) => updateBasic("monthlyInvestment", v)} min={0} max={1000000} step={5000} unit="元" />
@@ -499,11 +473,11 @@ function SimulatorContent() {
                           </button>
                         ))}
                       </div>
-                      <SliderInput id="annualReturn" label="預期平均年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={20} step={0.5} unit="%" />
+
                       <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。如果你的資產配置含公債可降至 5~10%。" />
                     </div>
 
-                    <SliderInput id="investmentYears" label="模擬年數" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
+
 
                     <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
@@ -585,13 +559,58 @@ function SimulatorContent() {
                       style={{ background: "var(--accent-primary)", color: "white" }}
                     >
                       {isLoadingMC ? (
-                        <span className="animate-pulse">🚀 啟動 1,000 次運算中...</span>
+                        <span className="flex items-center gap-2">
+                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                          量化模擬中...
+                        </span>
                       ) : (
-                        "🔥 執行 1,000 次蒙地卡羅模擬"
+                        "🚀 執行 1,000 次蒙地卡羅模擬"
                       )}
                     </button>
                   </>
                 ) : null}
+
+                {(activeTab === "basic" || activeTab === "mc") && (
+                  <div className="mt-8 border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
+                    <h2 className="font-semibold text-sm mb-5 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                      <span className="w-1.5 h-4 rounded-full" style={{ background: "var(--accent-secondary)" }} />
+                      全局資產與生涯設定
+                    </h2>
+                    
+                    <SliderInput id="currentAssets" label="現有總資產" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} min={0} max={150000000} step={500000} unit="元" />
+                    <SliderInput id="investmentYears" label="計畫執行期" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
+                    
+                    <div className="mt-6 mb-4 bg-gray-50/50 dark:bg-slate-800/30 p-4 rounded-xl border border-dashed" style={{ borderColor: "var(--border-subtle)" }}>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider mb-4 opacity-60" style={{ color: "var(--text-primary)" }}>市場與職涯參數 (Global Params)</h3>
+                      <SliderInput id="annualReturn" label="平均年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={20} step={0.5} unit="%" />
+                      <SliderInput id="inflationRate" label="預估長通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.5} unit="%" />
+                      <SliderInput id="salaryGrowthRate" label="年平均調薪幅" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={10} step={0.5} unit="%" />
+                    </div>
+
+                    <div className="mt-6">
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                        <span className="w-1.5 h-4 rounded-full bg-violet-500" />
+                        🧬 人生路徑發展 (Life Path)
+                      </h3>
+                      <p className="text-[11px] mb-4 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                        模擬人口動態：設定不同階段的家庭規模，自動套用經濟學模型影響支出預測。
+                      </p>
+                      {lifeStages.map((stage, i) => (
+                        <div key={i} className="p-3 rounded-xl mb-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
+                          <div className="text-xs font-bold mb-2 uppercase opacity-70" style={{ color: "var(--text-primary)" }}>{STAGE_LABELS[i]}</div>
+                          <div className="flex gap-2 items-center mb-1">
+                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>至第</label>
+                            <input type="number" value={stage.endYear} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], endYear: Math.max(1, Math.min(50, Number(e.target.value)))}; setLifeStages(v); }} className="input-field !w-14 !py-1 text-xs text-center" min={1} max={50} />
+                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>年</label>
+                            <select value={stage.familySize} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], familySize: Number(e.target.value)}; setLifeStages(v); }} className="flex-1 p-1.5 rounded-lg border text-[11px] appearance-none" style={{ background: "var(--bg-primary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}>
+                              {FAMILY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Save Scenario */}
                 {activeTab !== "mc" && (
