@@ -122,6 +122,31 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
   );
 }
 
+function CompactInput({
+  label, value, onChange, unit, step = 1, min, max,
+}: {
+  label: string; value: number; onChange: (v: number) => void;
+  unit: string; step?: number; min?: number; max?: number;
+}) {
+  return (
+    <div>
+      <label className="text-xs block mb-1 font-medium" style={{ color: "var(--text-muted)" }}>{label}</label>
+      <div className="flex items-center gap-1.5">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          step={step}
+          min={min}
+          max={max}
+          className="input-field !py-1.5 text-sm number-display flex-1 text-right"
+        />
+        <span className="text-xs shrink-0 w-4" style={{ color: "var(--text-muted)" }}>{unit}</span>
+      </div>
+    </div>
+  );
+}
+
 function SimulatorContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "housing" ? "housing" : searchParams.get("tab") === "mc" ? "mc" : "basic";
@@ -319,7 +344,7 @@ function SimulatorContent() {
       <main className="flex-1 pt-20 pb-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl sm:text-4xl font-bold mb-3">
               財務<span style={{ color: "var(--accent-primary)" }}>沙盤推演</span>
             </h1>
@@ -328,63 +353,64 @@ function SimulatorContent() {
             </p>
           </div>
 
+          {/* === Global Config Band === */}
+          <div className="glass-card p-4 mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>⚙ 全局基礎參數</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>（以下設定會影響所有分頁的計算）</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3">
+              <CompactInput label="現有資產 (元)" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} unit="元" step={100000} min={0} max={150000000} />
+              <CompactInput label="計畫年數" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} unit="年" step={1} min={1} max={50} />
+              <CompactInput label="年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} unit="%" step={0.5} min={0} max={20} />
+              <CompactInput label="通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} unit="%" step={0.5} min={0} max={10} />
+              <CompactInput label="年調薪幅度" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} unit="%" step={0.5} min={0} max={10} />
+            </div>
+          </div>
+
           {/* Tabs */}
-          <div className="flex gap-2 mb-8 p-1 rounded-xl w-fit" style={{ background: "var(--bg-secondary)" }}>
-            <button
-              id="tab-basic"
-              className={`tab-button ${activeTab === "basic" ? "active" : ""}`}
-              onClick={() => setActiveTab("basic")}
-            >
+          <div className="flex gap-2 mb-6 p-1 rounded-xl w-fit" style={{ background: "var(--bg-secondary)" }}>
+            <button id="tab-basic" className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
               📈 複利試算
             </button>
-            <button
-              id="tab-housing"
-              className={`tab-button ${activeTab === "housing" ? "active" : ""}`}
-              onClick={() => setActiveTab("housing")}
-            >
+            <button id="tab-housing" className={`tab-button ${activeTab === "housing" ? "active" : ""}`} onClick={() => setActiveTab("housing")}>
               🏠 租屋 vs 買房
             </button>
-            <button
-              id="tab-mc"
-              className={`tab-button ${activeTab === "mc" ? "active" : ""}`}
-              onClick={() => setActiveTab("mc")}
-            >
+            <button id="tab-mc" className={`tab-button ${activeTab === "mc" ? "active" : ""}`} onClick={() => setActiveTab("mc")}>
               🎲 蒙地卡羅壓測
             </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Panel: Controls */}
+            {/* ===== Left Panel: Tab-Specific Controls ===== */}
             <div className="lg:col-span-4">
               <div className="glass-card p-6 sticky top-20">
-                {activeTab === "basic" ? (
+
+                {/* --- 複利試算 --- */}
+                {activeTab === "basic" && (
                   <>
-                    <h2 className="font-semibold text-base mb-2 flex items-center gap-2">
+                    <h2 className="font-semibold text-base mb-4 flex items-center gap-2">
                       <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "var(--accent-primary-dim)", color: "var(--accent-primary)" }}>⚙</span>
                       現況與收支設定
                     </h2>
-                    <div className="mb-4 text-xs" style={{ color: "var(--text-muted)" }}>
-                      💡 此設定將作為財富累積與 FIRE 退休計畫的基準。
-                    </div>
                     <SliderInput id="monthlyIncome" label="月收入" value={basicParams.monthlyIncome} onChange={(v) => updateBasic("monthlyIncome", v)} min={0} max={2000000} step={5000} unit="元" />
                     <SliderInput id="monthlyExpense" label="月支出" value={basicParams.monthlyExpense} onChange={(v) => updateBasic("monthlyExpense", v)} min={0} max={1000000} step={5000} unit="元" />
                     <SliderInput id="monthlyInvestment" label="月投資額" value={basicParams.monthlyInvestment} onChange={(v) => updateBasic("monthlyInvestment", v)} min={0} max={1000000} step={5000} unit="元" />
-
-
-
-
                   </>
-                ) : activeTab === "housing" ? (
+                )}
+
+                {/* --- 租屋 vs 買房 --- */}
+                {activeTab === "housing" && (
                   <>
-                    <h2 className="font-semibold text-base mb-2 flex items-center gap-2">
+                    <h2 className="font-semibold text-base mb-4 flex items-center gap-2">
                       <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "var(--accent-secondary-dim)", color: "var(--accent-secondary)" }}>🏠</span>
                       全局資金與時程
                     </h2>
-                    <SliderInput id="initialCapital" label="初始總資金" value={housingParams.initialCapital} onChange={(v) => updateHousing("initialCapital", v)} min={1000000} max={150000000} step={500000} unit="元" hint="這筆彈藥在租屋會全數投資，買房則先付頭期額度，剩餘才投資。" />
+                    <SliderInput id="initialCapital" label="初始總資金" value={housingParams.initialCapital} onChange={(v) => updateHousing("initialCapital", v)} min={1000000} max={150000000} step={500000} unit="元" hint="租屋全數投資；買房先付頭期，剩餘投資。" />
                     <SliderInput id="yearsToCompare" label="比較年數" value={housingParams.yearsToCompare} onChange={(v) => updateHousing("yearsToCompare", v)} min={5} max={50} step={5} unit="年" />
                     <SliderInput id="investReturn" label="投資報酬率" value={housingParams.investReturn} onChange={(v) => updateHousing("investReturn", v)} min={0} max={15} step={0.5} unit="%" hint="未動用資金與每月結餘投入市場的預期報酬率" />
 
-                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                    <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
                         <span className="w-1.5 h-4 rounded-full" style={{ background: "var(--accent-secondary)" }} />
                         買房專屬參數
@@ -393,63 +419,55 @@ function SimulatorContent() {
                       <SliderInput id="downPaymentPercent" label="頭期款成數" value={housingParams.downPaymentPercent} onChange={(v) => updateHousing("downPaymentPercent", v)} min={10} max={50} step={5} unit="%" />
                       <SliderInput id="loanRate" label="房貸利率" value={housingParams.loanRate} onChange={(v) => updateHousing("loanRate", v)} min={1} max={5} step={0.1} unit="%" hint="目前首購房貸地板價約 2.185 起" />
                       <SliderInput id="loanYears" label="貸款年限" value={housingParams.loanYears} onChange={(v) => updateHousing("loanYears", v)} min={10} max={40} step={5} unit="年" />
-
-                      <div className="p-3 mt-3 mb-4 rounded-xl" style={{ background: "rgba(139, 92, 246, 0.08)", border: "1px dashed rgba(139, 92, 246, 0.3)" }}>
+                      <div className="p-3 mt-2 mb-4 rounded-xl" style={{ background: "rgba(139, 92, 246, 0.08)", border: "1px dashed rgba(139, 92, 246, 0.3)" }}>
                         <p className="text-sm font-medium flex justify-between items-center" style={{ color: "var(--accent-secondary)" }}>
-                          <span className="flex items-center gap-1">💡 每月房貸本息攤還試算</span>
-                          <span className="text-base font-bold">即約 {formatNumber(computedMortgage)} 元</span>
+                          <span>💡 每月房貸本息攤還試算</span>
+                          <span className="text-base font-bold">{formatNumber(computedMortgage)} 元</span>
                         </p>
                       </div>
-
-                      <SliderInput id="houseAppreciationRate" label="房價年漲幅" value={housingParams.houseAppreciationRate} onChange={(v) => updateHousing("houseAppreciationRate", v)} min={-5} max={10} step={0.5} unit="%" hint="過去十數年多數都會區平均大於通膨，保守可設 2~3%" />
-                      <SliderInput id="maintenanceRate" label="年維護成本" value={housingParams.maintenanceRate} onChange={(v) => updateHousing("maintenanceRate", v)} min={0} max={3} step={0.1} unit="%" hint="抓房價 0.5~1% 作為房屋稅金與修繕基金" />
+                      <SliderInput id="houseAppreciationRate" label="房價年漲幅" value={housingParams.houseAppreciationRate} onChange={(v) => updateHousing("houseAppreciationRate", v)} min={-5} max={10} step={0.5} unit="%" hint="保守預估 2~3%" />
+                      <SliderInput id="maintenanceRate" label="年維護成本" value={housingParams.maintenanceRate} onChange={(v) => updateHousing("maintenanceRate", v)} min={0} max={3} step={0.1} unit="%" hint="抓房價 0.5~1% 作為稅金與修繕基金" />
                     </div>
 
-                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                    <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
                         <span className="w-1.5 h-4 rounded-full" style={{ background: "var(--accent-primary)" }} />
                         租屋專屬參數
                       </h3>
-                      <SliderInput id="monthlyRent" label="預計租屋月租金" value={housingParams.monthlyRent} onChange={(v) => updateHousing("monthlyRent", v)} min={5000} max={500000} step={5000} unit="元" />
+                      <SliderInput id="monthlyRent" label="預計月租金" value={housingParams.monthlyRent} onChange={(v) => updateHousing("monthlyRent", v)} min={5000} max={500000} step={5000} unit="元" />
                       <SliderInput id="rentIncreaseRate" label="年租金漲幅" value={housingParams.rentIncreaseRate} onChange={(v) => updateHousing("rentIncreaseRate", v)} min={0} max={5} step={0.5} unit="%" />
-                      <div className="mt-4 text-[10px] opacity-40 italic" style={{ color: "var(--text-muted)" }}>
-                        ＊此比擬模式專注於房地產財務路徑，暫不連動人生階段預測。
-                      </div>
                     </div>
                   </>
-                ) : activeTab === "mc" ? (
+                )}
+
+                {/* --- 蒙地卡羅 --- */}
+                {activeTab === "mc" && (
                   <>
-                    <h2 className="font-semibold text-base mb-2 flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b" }}>⚙</span>
-                      人生階段選擇與現況連動
+                    <h2 className="font-semibold text-base mb-4 flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b" }}>🎲</span>
+                      壓力測試參數
                     </h2>
 
-                    <div className="flex gap-2 mb-6 p-1 rounded-xl" style={{ background: "var(--bg-secondary)" }}>
+                    <div className="flex gap-2 mb-5 p-1 rounded-xl" style={{ background: "var(--bg-secondary)" }}>
                       <button
-                        className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-all ${mcParams.phase === "accumulation" ? "bg-white text-slate-900 shadow-sm" : "opacity-60 hover:opacity-100"}`}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${mcParams.phase === "accumulation" ? "bg-white text-slate-900 shadow-sm" : "opacity-60 hover:opacity-100"}`}
                         onClick={() => updateMC("phase", "accumulation")}
                       >
                         💪 財富累積期
                       </button>
                       <button
-                        className={`flex-1 py-1.5 px-3 rounded-lg text-sm font-medium transition-all ${mcParams.phase === "decumulation" ? "bg-white text-slate-900 shadow-sm" : "opacity-60 hover:opacity-100"}`}
+                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${mcParams.phase === "decumulation" ? "bg-white text-slate-900 shadow-sm" : "opacity-60 hover:opacity-100"}`}
                         onClick={() => updateMC("phase", "decumulation")}
                       >
                         🌴 退休提領期
                       </button>
                     </div>
 
-                    {mcParams.phase === "accumulation" ? (
-                      <div className="mb-4 text-xs" style={{ color: "var(--text-muted)" }}>
-                        💡 模擬工作期間：每月持續投入「月投資額」，不會變賣資產生活。破產機率為 0。
-                      </div>
-                    ) : (
-                      <div className="mb-4 text-xs" style={{ color: "var(--text-muted)" }}>
-                        ⚠️ 模擬退休期間：停止工作投入。每月強制變賣資產來支付「月支出」。測驗資產存活率。
-                      </div>
-                    )}
-
-
+                    <div className="mb-4 text-xs p-3 rounded-lg" style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                      {mcParams.phase === "accumulation"
+                        ? "💡 模擬工作期間：每月持續投入月投資額，不會變賣資產。破產機率為 0。"
+                        : "⚠️ 模擬退休期間：停止工作投入，每月變賣資產支付月支出，測驗資產存活率。"}
+                    </div>
 
                     {mcParams.phase === "accumulation" ? (
                       <SliderInput id="monthlyInvestment" label="每月繼續投資" value={basicParams.monthlyInvestment} onChange={(v) => updateBasic("monthlyInvestment", v)} min={0} max={1000000} step={5000} unit="元" />
@@ -457,15 +475,13 @@ function SimulatorContent() {
                       <SliderInput id="monthlyExpense" label="退休每月支出" value={basicParams.monthlyExpense} onChange={(v) => updateBasic("monthlyExpense", v)} min={0} max={1000000} step={5000} unit="元" />
                     )}
 
-                    <div className="mb-4 mt-6">
-                      <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="mb-5 mt-2">
+                      <p className="text-xs mb-2 font-medium" style={{ color: "var(--text-muted)" }}>快速套用 ETF 預設</p>
+                      <div className="flex flex-wrap gap-1.5">
                         {ETF_PRESETS.map((preset) => (
                           <button
                             key={preset.name}
-                            onClick={() => {
-                              updateBasic("annualReturn", preset.return);
-                              updateMC("volatility", preset.vol);
-                            }}
+                            onClick={() => { updateBasic("annualReturn", preset.return); updateMC("volatility", preset.vol); }}
                             className="px-2.5 py-1 text-xs rounded-full border transition-colors hover:bg-white/5"
                             style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}
                           >
@@ -473,81 +489,61 @@ function SimulatorContent() {
                           </button>
                         ))}
                       </div>
-
-                      <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。如果你的資產配置含公債可降至 5~10%。" />
                     </div>
 
+                    <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
 
-
-                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                    <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
                         <span className="w-1.5 h-4 rounded-full bg-red-500" />
                         歷史災難壓力測試 (黑天鵝劇本)
                       </h3>
-
-                      <div className="mb-4">
-                        <select
-                          className="w-full p-2.5 rounded-lg border text-sm appearance-none outline-none"
-                          style={{ background: "var(--bg-secondary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}
-                          value={mcParams.scenarioId}
-                          onChange={(e) => updateMC("scenarioId", e.target.value)}
-                        >
-                          {CRISIS_SCENARIOS.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
-                        </select>
-                        <div className="absolute right-9 mt--8 pointer-events-none text-xs" style={{ transform: "translateY(-27px)" }}>▼</div>
-                      </div>
-
+                      <select
+                        className="w-full p-2.5 rounded-lg border text-sm outline-none mb-3"
+                        style={{ background: "var(--bg-secondary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}
+                        value={mcParams.scenarioId}
+                        onChange={(e) => updateMC("scenarioId", e.target.value)}
+                      >
+                        {CRISIS_SCENARIOS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
                       {mcParams.scenarioId !== "none" && (
-                        <div className="p-4 rounded-xl mb-2" style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px dashed rgba(239, 68, 68, 0.2)" }}>
-                          <div className="mb-4 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                        <div className="p-3 rounded-xl mb-2" style={{ background: "rgba(239, 68, 68, 0.05)", border: "1px dashed rgba(239, 68, 68, 0.2)" }}>
+                          <p className="text-xs mb-3 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                             💡 {CRISIS_SCENARIOS.find(s => s.id === mcParams.scenarioId)?.description}
-                          </div>
-                          <SliderInput id="blackSwanYear" label="劇本引爆時機 (第 X 年發生)" value={mcParams.blackSwanYear} onChange={(v) => updateMC("blackSwanYear", v)} min={0} max={basicParams.investmentYears} step={1} unit="年" hint="0 代表此劇本尚未觸發。拉動滑桿決定災難何時降臨。" />
+                          </p>
+                          <SliderInput id="blackSwanYear" label="劇本引爆時機 (第 X 年)" value={mcParams.blackSwanYear} onChange={(v) => updateMC("blackSwanYear", v)} min={0} max={basicParams.investmentYears} step={1} unit="年" hint="0 代表未觸發，拉動決定災難何時降臨。" />
                           {mcParams.scenarioId === "custom" && mcParams.blackSwanYear > 0 && (
-                            <SliderInput id="blackSwanDrop" label="當年單次崩盤跌幅" value={mcParams.blackSwanDrop} onChange={(v) => updateMC("blackSwanDrop", v)} min={10} max={80} step={5} unit="%" />
+                            <SliderInput id="blackSwanDrop" label="當年崩盤跌幅" value={mcParams.blackSwanDrop} onChange={(v) => updateMC("blackSwanDrop", v)} min={10} max={80} step={5} unit="%" />
                           )}
                         </div>
                       )}
                     </div>
 
-                    <div className="mt-8 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                    <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
                         <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
-                        Pro 進階參數與策略 (Advanced Options)
+                        進階策略 (Advanced Options)
                       </h3>
-
-                      <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(99, 102, 241, 0.05)", border: "1px dashed rgba(99, 102, 241, 0.2)" }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                            跳躍擴散模型 (每年隨機崩盤)
-                          </label>
-                        </div>
-                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-                          💡 除上述指定劇本外，每年額外觸發無預警黑天鵝的機率。
-                        </p>
+                      <div className="p-3 rounded-xl mb-3" style={{ background: "rgba(99, 102, 241, 0.05)", border: "1px dashed rgba(99, 102, 241, 0.2)" }}>
+                        <p className="text-sm font-medium mb-1" style={{ color: "var(--text-primary)" }}>跳躍擴散模型 (每年隨機崩盤)</p>
+                        <p className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>💡 除指定劇本外，每年額外觸發無預警黑天鵝的機率。</p>
                         <SliderInput id="jumpProbability" label="每年發生機率" value={mcParams.jumpProbability} onChange={(v) => updateMC("jumpProbability", v)} min={0} max={20} step={1} unit="%" hint="0 代表關閉隨機黑天鵝" />
                         {mcParams.jumpProbability > 0 && (
-                          <SliderInput id="jumpImpact" label="單次隨機崩盤跌幅" value={mcParams.jumpImpact} onChange={(v) => updateMC("jumpImpact", v)} min={5} max={50} step={5} unit="%" />
+                          <SliderInput id="jumpImpact" label="單次崩盤跌幅" value={mcParams.jumpImpact} onChange={(v) => updateMC("jumpImpact", v)} min={5} max={50} step={5} unit="%" />
                         )}
                       </div>
 
-                      <div className="p-4 rounded-xl mb-2" style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px dashed rgba(16, 185, 129, 0.2)" }}>
+                      <div className="p-3 rounded-xl" style={{ background: "rgba(16, 185, 129, 0.05)", border: "1px dashed rgba(16, 185, 129, 0.2)" }}>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                            動態提領防禦 (Dynamic Spending)
-                          </label>
+                          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>動態提領防禦 (Dynamic Spending)</p>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" className="sr-only peer" checked={mcParams.isDynamic} onChange={(e) => updateMC("isDynamic", e.target.checked)} />
                             <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
                           </label>
                         </div>
-                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-                          🛡️ 模擬真實人生避險行為：若前一年市場報酬為負數，則當年按比例縮減生活費。可高度拯救破產率！
-                        </p>
+                        <p className="text-xs mb-3" style={{ color: "var(--text-secondary)" }}>🛡️ 市場下跌年份自動縮減生活費，可大幅提升資產存活率！</p>
                         {mcParams.isDynamic && (
-                          <SliderInput id="dynamicRatio" label="當年度縮減提領比例" value={mcParams.dynamicRatio} onChange={(v) => updateMC("dynamicRatio", v)} min={5} max={50} step={5} unit="%" />
+                          <SliderInput id="dynamicRatio" label="縮減提領比例" value={mcParams.dynamicRatio} onChange={(v) => updateMC("dynamicRatio", v)} min={5} max={50} step={5} unit="%" />
                         )}
                       </div>
                     </div>
@@ -555,7 +551,7 @@ function SimulatorContent() {
                     <button
                       onClick={runMonteCarlo}
                       disabled={isLoadingMC}
-                      className="w-full mt-4 py-3.5 rounded-xl font-bold flex items-center justify-center transition-all disabled:opacity-50"
+                      className="w-full mt-5 py-3.5 rounded-xl font-bold flex items-center justify-center transition-all disabled:opacity-50"
                       style={{ background: "var(--accent-primary)", color: "white" }}
                     >
                       {isLoadingMC ? (
@@ -563,61 +559,15 @@ function SimulatorContent() {
                           <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                           量化模擬中...
                         </span>
-                      ) : (
-                        "🚀 執行 1,000 次蒙地卡羅模擬"
-                      )}
+                      ) : "🚀 執行 1,000 次蒙地卡羅模擬"}
                     </button>
                   </>
-                ) : null}
-
-                {(activeTab === "basic" || activeTab === "mc") && (
-                  <div className="mt-8 border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
-                    <h2 className="font-semibold text-sm mb-5 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
-                      <span className="w-1.5 h-4 rounded-full" style={{ background: "var(--accent-secondary)" }} />
-                      全局資產與生涯設定
-                    </h2>
-                    
-                    <SliderInput id="currentAssets" label="現有總資產" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} min={0} max={150000000} step={500000} unit="元" />
-                    <SliderInput id="investmentYears" label="計畫執行期" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
-                    
-                    <div className="mt-6 mb-4 bg-gray-50/50 dark:bg-slate-800/30 p-4 rounded-xl border border-dashed" style={{ borderColor: "var(--border-subtle)" }}>
-                      <h3 className="text-[10px] font-bold uppercase tracking-wider mb-4 opacity-60" style={{ color: "var(--text-primary)" }}>市場與職涯參數 (Global Params)</h3>
-                      <SliderInput id="annualReturn" label="平均年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={20} step={0.5} unit="%" />
-                      <SliderInput id="inflationRate" label="預估長通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.5} unit="%" />
-                      <SliderInput id="salaryGrowthRate" label="年平均調薪幅" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={10} step={0.5} unit="%" />
-                    </div>
-
-                    <div className="mt-6">
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
-                        <span className="w-1.5 h-4 rounded-full bg-violet-500" />
-                        🧬 人生路徑發展 (Life Path)
-                      </h3>
-                      <p className="text-[11px] mb-4 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                        模擬人口動態：設定不同階段的家庭規模，自動套用經濟學模型影響支出預測。
-                      </p>
-                      {lifeStages.map((stage, i) => (
-                        <div key={i} className="p-3 rounded-xl mb-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
-                          <div className="text-xs font-bold mb-2 uppercase opacity-70" style={{ color: "var(--text-primary)" }}>{STAGE_LABELS[i]}</div>
-                          <div className="flex gap-2 items-center mb-1">
-                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>至第</label>
-                            <input type="number" value={stage.endYear} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], endYear: Math.max(1, Math.min(50, Number(e.target.value)))}; setLifeStages(v); }} className="input-field !w-14 !py-1 text-xs text-center" min={1} max={50} />
-                            <label className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>年</label>
-                            <select value={stage.familySize} onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], familySize: Number(e.target.value)}; setLifeStages(v); }} className="flex-1 p-1.5 rounded-lg border text-[11px] appearance-none" style={{ background: "var(--bg-primary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}>
-                              {FAMILY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 )}
 
-                {/* Save Scenario */}
+                {/* Save Scenario - for basic and housing */}
                 {activeTab !== "mc" && (
                   <div className="mt-6 pt-5 border-t" style={{ borderColor: "var(--border-subtle)" }}>
-                    <p className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>
-                      💾 儲存劇本（{scenarios.length}/3）
-                    </p>
+                    <p className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>💾 儲存劇本（{scenarios.length}/3）</p>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -627,33 +577,15 @@ function SimulatorContent() {
                         className="input-field !py-2 text-sm flex-1"
                         maxLength={20}
                       />
-                      <button onClick={handleSave} className="btn-accent !py-2 !px-4 text-sm shrink-0">
-                        存檔
-                      </button>
+                      <button onClick={handleSave} className="btn-accent !py-2 !px-4 text-sm shrink-0">存檔</button>
                     </div>
-                    {saveMessage && (
-                      <p className="text-xs mt-2" style={{ color: "var(--accent-primary)" }}>{saveMessage}</p>
-                    )}
-
-                    {/* Scenario List */}
+                    {saveMessage && <p className="text-xs mt-2" style={{ color: "var(--accent-primary)" }}>{saveMessage}</p>}
                     {scenarios.length > 0 && (
                       <div className="mt-3 space-y-2">
                         {scenarios.map((s) => (
                           <div key={s.id} className="flex items-center justify-between p-2.5 rounded-lg text-sm" style={{ background: "var(--bg-secondary)" }}>
-                            <button
-                              onClick={() => handleLoad(s)}
-                              className="text-left flex-1 truncate font-medium hover:text-[var(--accent-primary)] transition-colors"
-                              style={{ color: "var(--text-secondary)" }}
-                            >
-                              {s.name}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(s.id)}
-                              className="ml-2 text-xs px-2 py-1 rounded hover:bg-red-500/20 transition-colors"
-                              style={{ color: "var(--text-muted)" }}
-                            >
-                              ✕
-                            </button>
+                            <button onClick={() => handleLoad(s)} className="text-left flex-1 truncate font-medium hover:text-[var(--accent-primary)] transition-colors" style={{ color: "var(--text-secondary)" }}>{s.name}</button>
+                            <button onClick={() => handleDelete(s.id)} className="ml-2 text-xs px-2 py-1 rounded hover:bg-red-500/20 transition-colors" style={{ color: "var(--text-muted)" }}>✕</button>
                           </div>
                         ))}
                       </div>
@@ -663,125 +595,101 @@ function SimulatorContent() {
               </div>
             </div>
 
-            {/* Right Panel: Results */}
+            {/* ===== Right Panel: Results ===== */}
             <div className="lg:col-span-8 space-y-6">
+
+              {/* === Life Path Panel (basic + mc only) === */}
+              {(activeTab === "basic" || activeTab === "mc") && (
+                <div className="glass-card p-5">
+                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                    <span className="w-1.5 h-4 rounded-full bg-violet-500" />
+                    🧬 人生路徑發展 (Life Path)
+                    <span className="text-xs font-normal ml-1" style={{ color: "var(--text-muted)" }}>— 設定各階段家庭規模，自動套用經濟學遞減開支模型</span>
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {lifeStages.map((stage, i) => (
+                      <div key={i} className="p-4 rounded-xl flex flex-col gap-3" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
+                        <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{STAGE_LABELS[i]}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>至第</span>
+                          <input
+                            type="number"
+                            value={stage.endYear}
+                            onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], endYear: Math.max(1, Math.min(50, Number(e.target.value)))}; setLifeStages(v); }}
+                            className="input-field !w-20 !py-1 text-sm text-center"
+                            min={1} max={50}
+                          />
+                          <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>年</span>
+                        </div>
+                        <select
+                          value={stage.familySize}
+                          onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], familySize: Number(e.target.value)}; setLifeStages(v); }}
+                          className="w-full p-2 rounded-lg border text-sm"
+                          style={{ background: "var(--bg-primary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}
+                        >
+                          {FAMILY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                        <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                          開支乘數：<span className="font-semibold" style={{ color: "var(--accent-primary)" }}>{FAMILY_MULTIPLIERS[stage.familySize]}x</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* === Tab-specific Results === */}
               {activeTab === "basic" ? (
                 <>
-                  {/* Stats Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <StatCard
-                      label="最終資產"
-                      value={formatTWD(finalAssets)}
-                      sub={`${basicParams.investmentYears} 年後`}
-                      color="var(--accent-primary)"
-                    />
-                    <StatCard
-                      label="累計投入"
-                      value={formatTWD(totalInvested)}
-                      sub="本金總額"
-                    />
-                    <StatCard
-                      label="投資報酬"
-                      value={formatTWD(totalReturns)}
-                      sub={`報酬率 ${totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(0) : 0}%`}
-                      color="var(--accent-success)"
-                    />
-                    <StatCard
-                      label="月被動收入"
-                      value={formatTWD(monthlyPassiveIncome)}
-                      sub="4% 法則估算"
-                      color="var(--accent-secondary)"
-                    />
+                    <StatCard label="最終資產" value={formatTWD(finalAssets)} sub={`${basicParams.investmentYears} 年後`} color="var(--accent-primary)" />
+                    <StatCard label="累計投入" value={formatTWD(totalInvested)} sub="本金總額" />
+                    <StatCard label="投資報酬" value={formatTWD(totalReturns)} sub={`報酬率 ${totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(0) : 0}%`} color="var(--accent-success)" />
+                    <StatCard label="月被動收入" value={formatTWD(monthlyPassiveIncome)} sub="4% 法則估算" color="var(--accent-secondary)" />
                   </div>
 
-                  {/* FIRE Age */}
-                  {fireYears !== null && (
+                  {fireYears !== null ? (
                     <div className="glass-card p-5 flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl animate-float" style={{ background: "var(--accent-primary-dim)" }}>
-                        🔥
-                      </div>
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl animate-float" style={{ background: "var(--accent-primary-dim)" }}>🔥</div>
                       <div>
                         <p className="text-base" style={{ color: "var(--text-secondary)" }}>預計達成財務自由</p>
-                        <p className="text-3xl font-bold my-1">
-                          <span style={{ color: "var(--accent-primary)" }}>{fireYears}</span> 年後
-                        </p>
-                        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                          被動收入 ≥ 通膨調整後年支出（4% 法則）
-                        </p>
+                        <p className="text-3xl font-bold my-1"><span style={{ color: "var(--accent-primary)" }}>{fireYears}</span> 年後</p>
+                        <p className="text-sm" style={{ color: "var(--text-muted)" }}>被動收入 ≥ 通膨調整後年支出（4% 法則）</p>
                       </div>
                     </div>
-                  )}
-                  {fireYears === null && (
+                  ) : (
                     <div className="glass-card p-5 flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: "rgba(239, 68, 68, 0.15)" }}>
-                        ⚠️
-                      </div>
+                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl" style={{ background: "rgba(239, 68, 68, 0.15)" }}>⚠️</div>
                       <div>
                         <p className="text-sm" style={{ color: "var(--text-secondary)" }}>以目前參數，100 年內無法達成財務自由</p>
-                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          試試提高月投資額或年化報酬率
-                        </p>
+                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>試試提高月投資額或年化報酬率</p>
                       </div>
                     </div>
                   )}
 
-                  {/* Chart */}
                   <div className="glass-card p-5">
-                    <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>
-                      資產成長曲線
-                    </h3>
+                    <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>資產成長曲線</h3>
                     <ProjectionChart data={projectionData} />
                   </div>
                 </>
               ) : activeTab === "housing" ? (
                 <>
-                  {/* Housing Stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <StatCard
-                      label="租屋淨資產"
-                      value={formatTWD(housingFinal?.rentNetWorth || 0)}
-                      sub={`${housingParams.yearsToCompare} 年後`}
-                      color={housingDiff > 0 ? "var(--accent-primary)" : "var(--text-secondary)"}
-                    />
-                    <StatCard
-                      label="買房淨資產"
-                      value={formatTWD(housingFinal?.buyNetWorth || 0)}
-                      sub={`${housingParams.yearsToCompare} 年後`}
-                      color={housingDiff <= 0 ? "var(--accent-primary)" : "var(--text-secondary)"}
-                    />
-                    <StatCard
-                      label="差額"
-                      value={`${housingDiff > 0 ? "租屋勝" : "買房勝"} ${formatTWD(Math.abs(housingDiff))}`}
-                      color={housingDiff > 0 ? "var(--accent-success)" : "var(--accent-secondary)"}
-                    />
-                    <StatCard
-                      label="月房貸"
-                      value={formatTWD(housingParams.housePrice * (1 - housingParams.downPaymentPercent / 100) * (housingParams.loanRate / 100 / 12) * Math.pow(1 + housingParams.loanRate / 100 / 12, housingParams.loanYears * 12) / (Math.pow(1 + housingParams.loanRate / 100 / 12, housingParams.loanYears * 12) - 1))}
-                      sub={`vs 月租 ${formatTWD(housingParams.monthlyRent)}`}
-                    />
+                    <StatCard label="租屋淨資產" value={formatTWD(housingFinal?.rentNetWorth || 0)} sub={`${housingParams.yearsToCompare} 年後`} color={housingDiff > 0 ? "var(--accent-primary)" : "var(--text-secondary)"} />
+                    <StatCard label="買房淨資產" value={formatTWD(housingFinal?.buyNetWorth || 0)} sub={`${housingParams.yearsToCompare} 年後`} color={housingDiff <= 0 ? "var(--accent-primary)" : "var(--text-secondary)"} />
+                    <StatCard label="差額" value={`${housingDiff > 0 ? "租屋勝" : "買房勝"} ${formatTWD(Math.abs(housingDiff))}`} color={housingDiff > 0 ? "var(--accent-success)" : "var(--accent-secondary)"} />
+                    <StatCard label="月房貸" value={formatTWD(housingParams.housePrice * (1 - housingParams.downPaymentPercent / 100) * (housingParams.loanRate / 100 / 12) * Math.pow(1 + housingParams.loanRate / 100 / 12, housingParams.loanYears * 12) / (Math.pow(1 + housingParams.loanRate / 100 / 12, housingParams.loanYears * 12) - 1))} sub={`vs 月租 ${formatTWD(housingParams.monthlyRent)}`} />
                   </div>
-
-                  {/* Compare Chart */}
                   <div className="glass-card p-5">
-                    <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>
-                      淨資產對比曲線
-                    </h3>
-                    <CompareChart
-                      data={housingData}
-                      loanYears={housingParams.loanYears}
-                      yearsToCompare={housingParams.yearsToCompare}
-                    />
+                    <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>淨資產對比曲線</h3>
+                    <CompareChart data={housingData} loanYears={housingParams.loanYears} yearsToCompare={housingParams.yearsToCompare} />
                   </div>
-
-                  {/* Key Assumptions */}
                   <div className="glass-card p-5">
-                    <h3 className="font-semibold text-sm mb-3" style={{ color: "var(--text-secondary)" }}>
-                      📋 模型假設說明
-                    </h3>
+                    <h3 className="font-semibold text-sm mb-3" style={{ color: "var(--text-secondary)" }}>📋 模型假設說明</h3>
                     <ul className="space-y-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                      <li>• <b>核心公平假設</b>：設定兩者每月拿出口袋的現金總額完全相同（取房貸與租金的大者為每月預算）。較便宜的一方，會將每月盈餘全額投入市場產生複利。</li>
+                      <li>• <b>核心公平假設</b>：兩者每月拿出口袋的現金總額完全相同，較便宜的一方將每月盈餘全額投入市場。</li>
                       <li>• 首月兩方案的起跑淨資產完全相同（皆等於「初始總資金」）。</li>
-                      <li>• 租屋方案沒有房子，資產 100% 來自投資市值。買房方案的資產 = 房屋市值 + 投資市值 - 剩餘房貸。</li>
+                      <li>• 租屋方案資產 100% 來自投資市值；買房方案 = 房屋市值 + 投資市值 - 剩餘房貸。</li>
                       <li>• 為求單純化，未計入交易成本落差（仲介費、土增稅、契稅等）。</li>
                       <li>• 本比較僅供推演參考，不構成買賣建議。</li>
                     </ul>
@@ -794,7 +702,7 @@ function SimulatorContent() {
                       <div className="text-6xl mb-4 opacity-50 animate-float">🎲</div>
                       <h3 className="text-xl font-bold mb-2">準備好進行真實世界壓力測試了嗎？</h3>
                       <p className="text-sm max-w-md mx-auto" style={{ color: "var(--text-secondary)" }}>
-                        真實市場不會永遠每年穩定成長。蒙地卡羅演算法將根據波動率與「基礎參數」設定，並透過 AWS 雲端運算瞬間隨機模擬 1,000 種不同的經濟走勢路徑，並統整出你的財富生存機率。
+                        真實市場不會永遠每年穩定成長。蒙地卡羅演算法將根據波動率與基礎參數，透過 AWS 雲端瞬間模擬 1,000 種不同的經濟走勢，統整出你的財富生存機率。
                       </p>
                       <button
                         onClick={runMonteCarlo}
@@ -828,11 +736,8 @@ function SimulatorContent() {
                           <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>連跌加上黑天鵝的最差 10% 運氣</p>
                         </div>
                       </div>
-
                       <div className="glass-card p-5">
-                        <h3 className="font-semibold text-base mb-4 flex items-center justify-between" style={{ color: "var(--text-secondary)" }}>
-                          <span>1,000 次千禧年平行宇宙扇形軌跡 (Fan Chart)</span>
-                        </h3>
+                        <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>1,000 次平行宇宙扇形軌跡 (Fan Chart)</h3>
                         <FanChart data={mcResult.percentilePaths} />
                       </div>
                     </div>
