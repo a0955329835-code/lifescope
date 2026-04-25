@@ -1,19 +1,12 @@
+import { BasicParams, HousingParams, LifeStage } from "./calculator";
+
 // localStorage 劇本管理
 export interface Scenario {
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
-  params: {
-    currentAssets: number;
-    monthlyIncome: number;
-    monthlyExpense: number;
-    monthlyInvestment: number;
-    annualReturn: number;
-    investmentYears: number;
-    inflationRate: number;
-    salaryGrowthRate: number;
-  };
+  params: BasicParams;
   housingParams?: {
     housePrice: number;
     downPaymentPercent: number;

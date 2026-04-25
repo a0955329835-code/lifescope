@@ -18,6 +18,7 @@ import {
   formatTWD,
   formatNumber,
   calculateMonthlyMortgage,
+  calculateMonthlyLoanPayment,
 } from "@/lib/calculator";
 import {
   getScenarios,
@@ -175,7 +176,12 @@ function SimulatorContent() {
     investmentYears: 30,
     inflationRate: 2,
     salaryGrowthRate: 3,
+    leverageAmount: 0,
+    leverageRate: 2.5,
+    leverageYears: 7,
   });
+
+  const [isLeverageEnabled, setIsLeverageEnabled] = useState(false);
 
   // Life stages (global)
   const [lifeStages, setLifeStages] = useState<LifeStage[]>([
@@ -245,7 +251,10 @@ function SimulatorContent() {
         isDynamic: mcParams.isDynamic,
         dynamicRatio: mcParams.dynamicRatio,
         lifeStages: lifeStages,
-        salaryGrowthRate: basicParams.salaryGrowthRate
+        salaryGrowthRate: basicParams.salaryGrowthRate,
+        leverageAmount: isLeverageEnabled ? (basicParams.leverageAmount || 0) : 0,
+        leverageRate: isLeverageEnabled ? (basicParams.leverageRate || 0) : 0,
+        leverageYears: isLeverageEnabled ? (basicParams.leverageYears || 0) : 0,
       };
 
       const API_URL = process.env.NEXT_PUBLIC_MC_API_URL;
@@ -279,6 +288,10 @@ function SimulatorContent() {
   const projectionData = useMemo(() => calculateProjection(basicParams, lifeStages), [basicParams, lifeStages]);
   const housingData = useMemo(() => calculateHousingCompare(housingParams), [housingParams]);
   const fireYears = useMemo(() => calculateFIREAge(basicParams, lifeStages), [basicParams, lifeStages]);
+
+  const computedMonthlyLoan = useMemo(() => {
+    return Math.round(calculateMonthlyLoanPayment(basicParams.leverageAmount || 0, basicParams.leverageRate || 0, basicParams.leverageYears || 0));
+  }, [basicParams.leverageAmount, basicParams.leverageRate, basicParams.leverageYears]);
 
   const computedMortgage = useMemo(() => {
     const downPayment = housingParams.housePrice * (housingParams.downPaymentPercent / 100);
@@ -329,6 +342,7 @@ function SimulatorContent() {
     if (scenario.lifeStages) {
       setLifeStages(scenario.lifeStages);
     }
+    setIsLeverageEnabled((scenario.params.leverageAmount || 0) > 0);
     setSaveMessage(`✅ 已載入「${scenario.name}」`);
     setTimeout(() => setSaveMessage(""), 2000);
   };
@@ -562,6 +576,42 @@ function SimulatorContent() {
                       ) : "🚀 執行 1,000 次蒙地卡羅模擬"}
                     </button>
                   </>
+                )}
+
+                {/* --- Shared Leverage Control --- */}
+                {(activeTab === "basic" || activeTab === "mc") && (
+                  <div className="mt-6 border-t pt-5" style={{ borderColor: "var(--border-subtle)" }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                        <span className="w-1.5 h-4 rounded-full bg-blue-500" />
+                        ⚖️ 財務槓桿策略 (信貸)
+                      </h3>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={isLeverageEnabled} onChange={(e) => {
+                          setIsLeverageEnabled(e.target.checked);
+                          if (!e.target.checked) updateBasic("leverageAmount", 0);
+                        }} />
+                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                      </label>
+                    </div>
+                    {isLeverageEnabled && (
+                      <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(59, 130, 246, 0.05)", border: "1px dashed rgba(59, 130, 246, 0.2)" }}>
+                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+                          💡 借款會於第 1 個月全額投入市場。請評估每月還款現金流壓力。
+                        </p>
+                        <SliderInput id="leverageAmount" label="借貸本金" value={basicParams.leverageAmount || 0} onChange={(v) => updateBasic("leverageAmount", v)} min={0} max={20000000} step={100000} unit="元" />
+                        <SliderInput id="leverageRate" label="貸款年利率" value={basicParams.leverageRate || 0} onChange={(v) => updateBasic("leverageRate", v)} min={1} max={15} step={0.1} unit="%" />
+                        <SliderInput id="leverageYears" label="貸款年限" value={basicParams.leverageYears || 0} onChange={(v) => updateBasic("leverageYears", v)} min={1} max={30} step={1} unit="年" />
+                        
+                        {(basicParams.leverageAmount || 0) > 0 && (basicParams.leverageYears || 0) > 0 && (
+                          <div className="mt-4 p-2.5 rounded-lg text-xs font-medium text-center flex justify-between items-center" style={{ background: "rgba(59, 130, 246, 0.1)", color: "#3b82f6" }}>
+                            <span>💡 試算每月還本付息：</span>
+                            <span className="text-sm font-bold">約 {formatNumber(computedMonthlyLoan)} 元</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Save Scenario - for basic and housing */}

@@ -57,6 +57,12 @@ def lambda_handler(event, context):
         
         # --- V2: Life Stages & Salary Growth ---
         salary_growth_rate = max(0.0, min(float(data.get('salaryGrowthRate', 0.0)), 20.0)) / 100.0
+        
+        # --- V3: Leverage ---
+        leverage_amount = max(0.0, float(data.get('leverageAmount', 0.0)))
+        leverage_rate = max(0.0, float(data.get('leverageRate', 0.0))) / 100.0
+        leverage_years = max(0, int(data.get('leverageYears', 0)))
+        
         raw_stages = data.get('lifeStages', [])
         if not isinstance(raw_stages, list):
             raw_stages = []
@@ -91,9 +97,37 @@ def lambda_handler(event, context):
         annual_contribution = monthly_contribution * 12
         base_annual_withdrawal = monthly_withdrawal * 12
         
+        # Pre-calculate leverage amortization
+        annual_loan_payment = 0.0
+        loan_balances = np.zeros(years + 1)
+        loan_balances[0] = leverage_amount
+        
+        if leverage_amount > 0 and leverage_years > 0:
+            if leverage_rate > 0:
+                monthly_rate = leverage_rate / 12
+                total_months = leverage_years * 12
+                monthly_loan_payment = leverage_amount * monthly_rate * ((1 + monthly_rate)**total_months) / (((1 + monthly_rate)**total_months) - 1)
+                annual_loan_payment = monthly_loan_payment * 12
+                
+                current_bal = leverage_amount
+                for y in range(1, years + 1):
+                    if y <= leverage_years:
+                        for _ in range(12):
+                            current_bal = current_bal * (1 + monthly_rate) - monthly_loan_payment
+                        loan_balances[y] = max(0, current_bal)
+                    else:
+                        loan_balances[y] = 0
+            else:
+                annual_loan_payment = leverage_amount / leverage_years
+                for y in range(1, years + 1):
+                    if y <= leverage_years:
+                        loan_balances[y] = max(0, leverage_amount - annual_loan_payment * y)
+                    else:
+                        loan_balances[y] = 0
+        
         # Initialize paths matrix: shape (years + 1, num_simulations)
         paths = np.zeros((years + 1, num_simulations))
-        paths[0] = initial_assets
+        paths[0] = initial_assets + leverage_amount
         
         # Build family multiplier array from life stages
         family_mult_array = np.ones(years)
@@ -154,7 +188,8 @@ def lambda_handler(event, context):
                 withdrawal_this_year[prev_market_returns < 0] *= (1.0 - dynamic_ratio)
             
             # Calculate new balance: (Balance + Contribution - Withdrawal) * (1 + Return)
-            cashflow = yearly_contributions[y - 1] - withdrawal_this_year
+            loan_deduction = annual_loan_payment if y <= leverage_years else 0.0
+            cashflow = yearly_contributions[y - 1] - withdrawal_this_year - loan_deduction
             
             new_balance = (prev_balance + cashflow) * (1 + random_returns)
             
@@ -165,21 +200,22 @@ def lambda_handler(event, context):
             prev_market_returns = random_returns
             
         # Calculate statistics
-        # A simulation is "ruined" if ending balance is exactly 0
-        ending_balances = paths[-1]
-        ruined_count = np.sum(ending_balances <= 0)
+        # A simulation is "ruined" if investment account is exactly 0
+        ruined_count = np.sum(paths[-1] <= 0)
         ruin_probability = float(ruined_count / num_simulations * 100.0)
         success_rate = 100.0 - ruin_probability
         
-        median_ending_wealth = float(np.median(ending_balances))
+        # Report Net Worth for the UI
+        net_worth_paths = paths - loan_balances[:, np.newaxis]
+        median_ending_wealth = float(np.median(net_worth_paths[-1]))
         
-        # Calculate percentiles for each year
+        # Calculate percentiles for each year using Net Worth
         percentiles_to_calc = [90, 75, 50, 25, 10]
         percentile_paths = []
         
         # paths is shape (years+1, 1000)
         # calculate percentiles along axis 1
-        pct_matrix = np.percentile(paths, percentiles_to_calc, axis=1) # shape (5, years+1)
+        pct_matrix = np.percentile(net_worth_paths, percentiles_to_calc, axis=1) # shape (5, years+1)
         
         for y in range(years + 1):
             year_data = {

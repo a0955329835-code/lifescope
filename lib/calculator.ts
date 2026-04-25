@@ -10,6 +10,9 @@ export interface BasicParams {
   investmentYears: number;    // 投資年數
   inflationRate: number;      // 通膨率 (%)
   salaryGrowthRate: number;   // 年調薪幅度 (%)
+  leverageAmount?: number;    // 借貸本金 (預設 0)
+  leverageRate?: number;      // 借貸年利率 (%)
+  leverageYears?: number;     // 借貸年限
 }
 
 export interface HousingParams {
@@ -76,6 +79,21 @@ export function formatNumber(num: number): string {
 }
 
 /**
+ * 試算信貸/房貸每月本息攤還金額
+ * 採用等額本息攤還法
+ */
+export function calculateMonthlyLoanPayment(principal: number, annualRate: number, years: number): number {
+  if (principal <= 0 || years <= 0) return 0;
+  if (annualRate <= 0) return principal / (years * 12);
+  
+  const monthlyRate = annualRate / 100 / 12;
+  const totalMonths = years * 12;
+  // P * r * (1+r)^n / ((1+r)^n - 1)
+  const power = Math.pow(1 + monthlyRate, totalMonths);
+  return principal * monthlyRate * power / (power - 1);
+}
+
+/**
  * 基礎複利試算
  * 每月投入固定金額，以年化報酬率複利成長
  */
@@ -87,17 +105,28 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     investmentYears,
     inflationRate,
     salaryGrowthRate = 0,
+    leverageAmount = 0,
+    leverageRate = 0,
+    leverageYears = 0,
   } = params;
 
   const monthlyRate = annualReturn / 100 / 12;
   const data: YearlyData[] = [];
-  let assets = currentAssets;
-  let totalInvested = currentAssets;
+  
+  // 借貸邏輯：期初資產增加
+  let assets = currentAssets + leverageAmount;
+  let totalInvested = currentAssets; // 本金不含借款
+  
+  // 預算每月還款額 (等額本息)
+  const monthlyLoanPayment = calculateMonthlyLoanPayment(leverageAmount, leverageRate, leverageYears);
+  
+  // 記錄剩餘貸款本金 (概算，用於扣除淨資產)
+  let remainingLoan = leverageAmount;
 
   data.push({
     year: 0,
-    assets: Math.round(assets),
-    realAssets: Math.round(assets),
+    assets: Math.round(assets - remainingLoan), // 圖表顯示真實淨資產
+    realAssets: Math.round(assets - remainingLoan),
     invested: Math.round(totalInvested),
     returns: 0,
   });
@@ -105,20 +134,34 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
   for (let year = 1; year <= investmentYears; year++) {
     const salaryFactor = Math.pow(1 + salaryGrowthRate / 100, year - 1);
     const adjustedInvestment = monthlyInvestment * salaryFactor;
+    
+    // 如果還在貸款期間，這筆現金流必須被扣除 (排擠投資)
+    const isPayingLoan = year <= leverageYears;
+    const loanDeduction = isPayingLoan ? monthlyLoanPayment : 0;
 
     for (let month = 0; month < 12; month++) {
-      assets = assets * (1 + monthlyRate) + adjustedInvestment;
+      // 每月資產增長 = 先計算本月投資報酬，再加入(或扣除)現金流
+      assets = assets * (1 + monthlyRate) + adjustedInvestment - loanDeduction;
+      
+      // 更新剩餘貸款本金 (精確扣除每月已還本金)
+      if (isPayingLoan && remainingLoan > 0) {
+        const monthlyLoanInterest = remainingLoan * (leverageRate / 100 / 12);
+        const principalPaid = monthlyLoanPayment - monthlyLoanInterest;
+        remainingLoan = Math.max(0, remainingLoan - principalPaid);
+      }
+      
       totalInvested += adjustedInvestment;
     }
 
     const discountFactor = Math.pow(1 + inflationRate / 100, year);
+    const netAssets = assets - remainingLoan; // 扣除未償還的負債
 
     data.push({
       year,
-      assets: Math.round(assets),
-      realAssets: Math.round(assets / discountFactor),
+      assets: Math.round(netAssets),
+      realAssets: Math.round(netAssets / discountFactor),
       invested: Math.round(totalInvested),
-      returns: Math.round(assets - totalInvested),
+      returns: Math.round(netAssets - totalInvested),
     });
   }
 
