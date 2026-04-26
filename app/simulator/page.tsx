@@ -418,13 +418,42 @@ function SimulatorContent() {
           </div>
 
           {/* === Global Config Band === */}
-          <div className="glass-card p-4 mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>⚙ 全局基礎參數</span>
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>（以下設定會影響所有分頁的計算）</span>
+          <div className="glass-card p-5 mb-6 relative overflow-hidden" style={{ border: "1px solid var(--accent-primary-dim)" }}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--accent-primary)" }}>
+                  <span className="w-1.5 h-4 rounded-full bg-blue-500" />
+                  全局基礎參數
+                </span>
+                <span className="text-xs opacity-70" style={{ color: "var(--text-muted)" }}>（以下設定會影響所有分頁的計算）</span>
+              </div>
+              
+              {/* ETF 預設移動至此 */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs font-medium mr-1" style={{ color: "var(--text-secondary)" }}>快速套用市場假設：</span>
+                {ETF_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => { 
+                      updateBasic("annualReturn", preset.return); 
+                      updateMC("volatility", preset.vol); 
+                    }}
+                    className="px-2.5 py-1 text-[11px] rounded-full border transition-all hover:bg-white/5 active:scale-95"
+                    style={{ 
+                      borderColor: basicParams.annualReturn === preset.return ? "var(--accent-primary)" : "var(--border-subtle)", 
+                      background: basicParams.annualReturn === preset.return ? "var(--accent-primary-dim)" : "transparent",
+                      color: basicParams.annualReturn === preset.return ? "var(--accent-primary)" : "var(--text-secondary)",
+                      fontWeight: basicParams.annualReturn === preset.return ? 600 : 400
+                    }}
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3">
-              <CompactInput label="現有資產 (元)" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} unit="元" step={100000} min={0} max={150000000} />
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-4">
+              <CompactInput label="現有資產" value={basicParams.currentAssets} onChange={(v) => updateBasic("currentAssets", v)} unit="元" step={100000} min={0} max={150000000} />
               <CompactInput label="計畫年數" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} unit="年" step={1} min={1} max={50} />
               <CompactInput label="年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} unit="%" step={0.5} min={0} max={20} />
               <CompactInput label="通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} unit="%" step={0.5} min={0} max={10} />
@@ -449,47 +478,6 @@ function SimulatorContent() {
             {/* ===== Left Panel: Tab-Specific Controls ===== */}
             <div className="lg:col-span-4">
               <div className="glass-card p-6 sticky top-20">
-                {/* --- 🌍 全局經濟假設 (影響所有試算) --- */}
-                <div className="mb-6 pb-5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
-                    <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
-                    🌍 全局經濟假設 (Environment)
-                  </h3>
-                  
-                  {/* ETF 預設 */}
-                  <div className="flex flex-wrap gap-1.5 mb-5">
-                    {ETF_PRESETS.map((preset) => (
-                      <button
-                        key={preset.name}
-                        onClick={() => { 
-                          updateBasic("annualReturn", preset.return); 
-                          updateMC("volatility", preset.vol); 
-                        }}
-                        className="px-2 py-1 text-[11px] rounded-full border transition-all hover:bg-white/5 active:scale-95"
-                        style={{ 
-                          borderColor: basicParams.annualReturn === preset.return ? "var(--accent-primary)" : "var(--border-subtle)", 
-                          background: basicParams.annualReturn === preset.return ? "var(--accent-primary-dim)" : "transparent",
-                          color: basicParams.annualReturn === preset.return ? "var(--accent-primary)" : "var(--text-secondary)" 
-                        }}
-                      >
-                        {preset.name}
-                      </button>
-                    ))}
-                  </div>
-
-                  <SliderInput id="annualReturn" label="預期年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={30} step={0.5} unit="%" hint="標普 500 長期約 7~10%，建議保守設定 5~7%。" />
-                  <SliderInput id="investmentYears" label="預計試算年限" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
-                  
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <SliderInput id="inflationRate" label="預期通膨" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.1} unit="%" />
-                    </div>
-                    <div className="flex-1">
-                      <SliderInput id="salaryGrowthRate" label="薪資成長" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={20} step={0.5} unit="%" />
-                    </div>
-                  </div>
-                </div>
-
                 {/* --- 複利試算 --- */}
                 {activeTab === "basic" && (
                   <>
