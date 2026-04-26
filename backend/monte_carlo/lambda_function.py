@@ -62,6 +62,7 @@ def lambda_handler(event, context):
         leverage_amount = max(0.0, float(data.get('leverageAmount', 0.0)))
         leverage_rate = max(0.0, float(data.get('leverageRate', 0.0))) / 100.0
         leverage_years = max(0, int(data.get('leverageYears', 0)))
+        leverage_recur_years = max(0, int(data.get('leverageRecurYears', 0)))
         
         raw_stages = data.get('lifeStages', [])
         if not isinstance(raw_stages, list):
@@ -176,6 +177,13 @@ def lambda_handler(event, context):
                 # Override returns with the drop rate to simulate a synchronized market crash
                 random_returns = np.full(num_simulations, drop_rate)
                 
+            # --- V3: Leverage Refill (Rolling Loan) ---
+            if leverage_recur_years > 0 and y > 1 and (y - 1) % leverage_recur_years == 0:
+                refill_amount = leverage_amount - loan_balances[y - 1]
+                if refill_amount > 0:
+                    paths[y - 1] += refill_amount
+                    loan_balances[y - 1] = leverage_amount
+
             # Previous year's balance
             prev_balance = paths[y - 1]
             
@@ -188,7 +196,9 @@ def lambda_handler(event, context):
                 withdrawal_this_year[prev_market_returns < 0] *= (1.0 - dynamic_ratio)
             
             # Calculate new balance: (Balance + Contribution - Withdrawal) * (1 + Return)
-            loan_deduction = annual_loan_payment if y <= leverage_years else 0.0
+            # If recurring, we assume we are always paying the loan
+            is_paying = (leverage_recur_years > 0) or (y <= leverage_years)
+            loan_deduction = annual_loan_payment if (leverage_amount > 0 and is_paying) else 0.0
             cashflow = yearly_contributions[y - 1] - withdrawal_this_year - loan_deduction
             
             new_balance = (prev_balance + cashflow) * (1 + random_returns)

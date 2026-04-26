@@ -179,6 +179,7 @@ function SimulatorContent() {
     leverageAmount: 0,
     leverageRate: 2.5,
     leverageYears: 7,
+    leverageRecurYears: 0,
   });
 
   const [isLeverageEnabled, setIsLeverageEnabled] = useState(false);
@@ -255,6 +256,7 @@ function SimulatorContent() {
         leverageAmount: isLeverageEnabled ? (basicParams.leverageAmount || 0) : 0,
         leverageRate: isLeverageEnabled ? (basicParams.leverageRate || 0) : 0,
         leverageYears: isLeverageEnabled ? (basicParams.leverageYears || 0) : 0,
+        leverageRecurYears: isLeverageEnabled ? (basicParams.leverageRecurYears || 0) : 0,
       };
 
       const API_URL = process.env.NEXT_PUBLIC_MC_API_URL;
@@ -598,12 +600,13 @@ function SimulatorContent() {
                     </div>
                     {isLeverageEnabled && (
                       <div className="p-4 rounded-xl mb-4" style={{ background: "rgba(59, 130, 246, 0.05)", border: "1px dashed rgba(59, 130, 246, 0.2)" }}>
-                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-                          💡 借款會於第 1 個月全額投入市場。請評估每月還款現金流壓力。
-                        </p>
+                        <div className="p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] leading-relaxed" style={{ color: "var(--accent-warning)" }}>
+                          ⚠️ <b>現金流提醒：</b> 系統已自動從「月投資額」中扣除貸款本息。若投資額不足，將會自動變賣資產來償還。借貸資金會於第 1 個月 100% 投入。
+                        </div>
                         <SliderInput id="leverageAmount" label="借貸本金" value={basicParams.leverageAmount || 0} onChange={(v) => updateBasic("leverageAmount", v)} min={0} max={20000000} step={100000} unit="元" />
                         <SliderInput id="leverageRate" label="貸款年利率" value={basicParams.leverageRate || 0} onChange={(v) => updateBasic("leverageRate", v)} min={1} max={15} step={0.1} unit="%" />
                         <SliderInput id="leverageYears" label="貸款年限" value={basicParams.leverageYears || 0} onChange={(v) => updateBasic("leverageYears", v)} min={1} max={30} step={1} unit="年" />
+                        <SliderInput id="leverageRecurYears" label="自動續借頻率" value={basicParams.leverageRecurYears || 0} onChange={(v) => updateBasic("leverageRecurYears", v)} min={0} max={10} step={1} unit="年" hint="0 代表不續借。每隔 X 年自動補足本金並重置債務。" />
                         
                         {(basicParams.leverageAmount || 0) > 0 && (basicParams.leverageYears || 0) > 0 && (
                           <div className="mt-4 p-2.5 rounded-lg text-xs font-medium text-center flex justify-between items-center" style={{ background: "rgba(59, 130, 246, 0.1)", color: "#3b82f6" }}>

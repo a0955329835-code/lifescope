@@ -13,6 +13,7 @@ export interface BasicParams {
   leverageAmount?: number;    // 借貸本金 (預設 0)
   leverageRate?: number;      // 借貸年利率 (%)
   leverageYears?: number;     // 借貸年限
+  leverageRecurYears?: number; // 自動續借頻率 (年, 0 代表不續借)
 }
 
 export interface HousingParams {
@@ -110,6 +111,7 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     leverageAmount = 0,
     leverageRate = 0,
     leverageYears = 0,
+    leverageRecurYears = 0,
   } = params;
 
   const monthlyRate = annualReturn / 100 / 12;
@@ -136,12 +138,20 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
   });
 
   for (let year = 1; year <= investmentYears; year++) {
+    // 檢查是否觸發「借新還舊」
+    const isRecurYear = leverageRecurYears > 0 && year > 1 && (year - 1) % leverageRecurYears === 0;
+    if (isRecurYear && remainingLoan < leverageAmount) {
+      const refillAmount = leverageAmount - remainingLoan;
+      assets += refillAmount; // 借出來的錢投入市場
+      remainingLoan = leverageAmount; // 債務回到初始值
+    }
+
     const salaryFactor = Math.pow(1 + salaryGrowthRate / 100, year - 1);
     const adjustedInvestment = monthlyInvestment * salaryFactor;
     
-    // 如果還在貸款期間，這筆現金流必須被扣除 (排擠投資)
-    const isPayingLoan = year <= leverageYears;
-    const loanDeduction = isPayingLoan ? monthlyLoanPayment : 0;
+    // 如果還在貸款期間 (或是有續借模式)，這筆現金流必須被扣除
+    const isPayingLoan = leverageRecurYears > 0 || year <= leverageYears;
+    const loanDeduction = (leverageAmount > 0 && isPayingLoan) ? monthlyLoanPayment : 0;
 
     for (let month = 0; month < 12; month++) {
       // 每月資產增長 = 先計算本月投資報酬，再加入(或扣除)現金流
