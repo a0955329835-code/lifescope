@@ -468,6 +468,17 @@ function SimulatorContent() {
                       updateBasic={updateBasic}
                       computedMonthlyLoan={computedMonthlyLoan}
                     />
+
+                    <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                        <span className="w-1.5 h-4 rounded-full bg-emerald-500" />
+                        📈 投資與經濟假設
+                      </h3>
+                      <SliderInput id="annualReturn" label="預期年化報酬率" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={30} step={0.5} unit="%" hint="標普 500 長期約 7~10%，保守建議設定 5~7%。" />
+                      <SliderInput id="investmentYears" label="預計投資年限" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" hint="建議設定到你的退休年齡（例如：65 - 現齡）。" />
+                      <SliderInput id="inflationRate" label="預期通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.1} unit="%" hint="影響未來購買力，台灣長期平均約 1.5~2%。" />
+                      <SliderInput id="salaryGrowthRate" label="薪資年成長率" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={20} step={0.5} unit="%" hint="考慮未來升職或調薪比例，通常抓 2~3%。" />
+                    </div>
                   </>
                 )}
 
@@ -573,7 +584,11 @@ function SimulatorContent() {
                           </button>
                         ))}
                       </div>
+                      <SliderInput id="annualReturn" label="預期年化報酬率 (均值)" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={30} step={0.5} unit="%" hint="蒙地卡羅會以此均值為中心進行隨機震盪。" />
                       <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
+                      <SliderInput id="investmentYears" label="預計模擬年限" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
+                      <SliderInput id="inflationRate" label="預期通膨率" value={basicParams.inflationRate} onChange={(v) => updateBasic("inflationRate", v)} min={0} max={10} step={0.1} unit="%" hint="台灣長期平均約 1.5~2%。" />
+                      <SliderInput id="salaryGrowthRate" label="薪資年成長率" value={basicParams.salaryGrowthRate} onChange={(v) => updateBasic("salaryGrowthRate", v)} min={0} max={20} step={0.5} unit="%" hint="通常抓 2~3%。" />
                     </div>
 
                     <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
