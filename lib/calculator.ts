@@ -31,10 +31,12 @@ export interface HousingParams {
 
 export interface YearlyData {
   year: number;
-  assets: number;         // 名目資產
-  realAssets: number;     // 通膨調整後資產 (實質購買力)
+  assets: number;         // 淨資產 (Net Worth)
+  realAssets: number;     // 通膨調整後淨資產
   invested: number;       // 累計投入本金
   returns: number;        // 累計報酬
+  portfolioValue?: number; // 投資帳戶總市值 (含借款)
+  loanBalance?: number;    // 尚未還清之借貸本金
 }
 
 export interface HousingCompareData {
@@ -129,6 +131,8 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     realAssets: Math.round(assets - remainingLoan),
     invested: Math.round(totalInvested),
     returns: 0,
+    portfolioValue: Math.round(assets),
+    loanBalance: Math.round(remainingLoan),
   });
 
   for (let year = 1; year <= investmentYears; year++) {
@@ -162,6 +166,8 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
       realAssets: Math.round(netAssets / discountFactor),
       invested: Math.round(totalInvested),
       returns: Math.round(netAssets - totalInvested),
+      portfolioValue: Math.round(assets),
+      loanBalance: Math.round(remainingLoan),
     });
   }
 

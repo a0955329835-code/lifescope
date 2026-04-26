@@ -300,6 +300,8 @@ function SimulatorContent() {
   }, [housingParams.housePrice, housingParams.downPaymentPercent, housingParams.loanRate, housingParams.loanYears]);
 
   const finalAssets = projectionData[projectionData.length - 1]?.assets || 0;
+  const finalPortfolio = projectionData[projectionData.length - 1]?.portfolioValue || 0;
+  const finalLoan = projectionData[projectionData.length - 1]?.loanBalance || 0;
   const totalInvested = projectionData[projectionData.length - 1]?.invested || 0;
   const totalReturns = projectionData[projectionData.length - 1]?.returns || 0;
   const monthlyPassiveIncome = finalAssets * 0.04 / 12;
@@ -692,8 +694,18 @@ function SimulatorContent() {
               {activeTab === "basic" ? (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <StatCard label="最終資產" value={formatTWD(finalAssets)} sub={`${basicParams.investmentYears} 年後`} color="var(--accent-primary)" />
-                    <StatCard label="累計投入" value={formatTWD(totalInvested)} sub="本金總額" />
+                    <StatCard 
+                      label="最終淨資產" 
+                      value={formatTWD(finalAssets)} 
+                      sub={`${basicParams.investmentYears} 年後`} 
+                      color="var(--accent-primary)" 
+                    />
+                    <StatCard 
+                      label="最終投資市值" 
+                      value={formatTWD(finalPortfolio)} 
+                      sub={finalLoan > 0 ? `(含未還貸款 ${formatTWD(finalLoan)})` : "投資總規模"} 
+                      color="#3b82f6" 
+                    />
                     <StatCard label="投資報酬" value={formatTWD(totalReturns)} sub={`報酬率 ${totalInvested > 0 ? ((totalReturns / totalInvested) * 100).toFixed(0) : 0}%`} color="var(--accent-success)" />
                     <StatCard label="月被動收入" value={formatTWD(monthlyPassiveIncome)} sub="4% 法則估算" color="var(--accent-secondary)" />
                   </div>

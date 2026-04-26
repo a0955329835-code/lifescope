@@ -22,6 +22,8 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
       displayAssets: Math.round(d.assets / 10000), // 轉成萬
       displayRealAssets: Math.round(d.realAssets / 10000), // 轉成萬
       displayInvested: Math.round(d.invested / 10000), // 轉成萬
+      displayPortfolio: d.portfolioValue ? Math.round(d.portfolioValue / 10000) : Math.round(d.assets / 10000),
+      displayLoan: d.loanBalance ? Math.round(d.loanBalance / 10000) : 0,
     }));
   }, [data]);
 
@@ -72,20 +74,31 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
             itemStyle={{ color: "var(--text-primary)" }}
             labelFormatter={(label) => `第 ${label} 年`}
             formatter={(value: any, name: any) => {
-              if (name === "displayAssets") return [formatTWD(Number(value) * 10000), "總資產 (名目)"];
-              if (name === "displayRealAssets") return [formatTWD(Number(value) * 10000), "總資產 (通膨調整後/購買力)"];
+              if (name === "displayPortfolio") return [formatTWD(Number(value) * 10000), "投資帳戶總市值 (含借款)"];
+              if (name === "displayRealAssets") return [formatTWD(Number(value) * 10000), "真實淨資產 (扣除借款/通膨)"];
               if (name === "displayInvested") return [formatTWD(Number(value) * 10000), "累計投入本金"];
+              if (name === "displayLoan") return [formatTWD(Number(value) * 10000), "尚未還清貸款"];
               return [value, name];
             }}
           />
           <Legend wrapperStyle={{ paddingTop: "20px" }} />
+          {formattedData.some((d) => d.displayLoan > 0) && (
+            <Line
+              type="monotone"
+              dataKey="displayPortfolio"
+              name="投資帳戶總市值"
+              stroke="#3b82f6"
+              strokeWidth={3}
+              dot={false}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="displayRealAssets"
-            name="實質資產 (通膨後)"
+            name={formattedData.some((d) => d.displayLoan > 0) ? "真實淨資產" : "實質資產 (通膨後)"}
             stroke="#f59e0b"
             strokeWidth={3}
-            strokeDasharray="5 5"
+            strokeDasharray={formattedData.some((d) => d.displayLoan > 0) ? "5 5" : undefined}
             dot={false}
           />
           <Area
