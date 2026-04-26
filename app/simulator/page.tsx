@@ -555,9 +555,13 @@ function SimulatorContent() {
                       computedMonthlyLoan={computedMonthlyLoan}
                     />
 
-                    <div className="mb-5 mt-2">
-                      <p className="text-xs mb-2 font-medium" style={{ color: "var(--text-muted)" }}>快速套用 ETF 預設</p>
-                      <div className="flex flex-wrap gap-1.5">
+                    <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
+                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                        <span className="w-1.5 h-4 rounded-full bg-orange-500" />
+                        📈 市場風險與標的預設
+                      </h3>
+                      <p className="text-xs mb-3 font-medium" style={{ color: "var(--text-muted)" }}>快速套用 ETF 歷史數據</p>
+                      <div className="flex flex-wrap gap-1.5 mb-5">
                         {ETF_PRESETS.map((preset) => (
                           <button
                             key={preset.name}
@@ -569,9 +573,8 @@ function SimulatorContent() {
                           </button>
                         ))}
                       </div>
+                      <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
                     </div>
-
-                    <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
 
                     <div className="mt-6 mb-4 border-t pt-4" style={{ borderColor: "var(--border-subtle)" }}>
                       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
