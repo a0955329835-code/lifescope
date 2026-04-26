@@ -449,6 +449,35 @@ function SimulatorContent() {
             {/* ===== Left Panel: Tab-Specific Controls ===== */}
             <div className="lg:col-span-4">
               <div className="glass-card p-6 sticky top-20">
+                {/* --- 🌍 全局市場假設 (快速套用) --- */}
+                <div className="mb-6 pb-5 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                    <span className="w-1.5 h-4 rounded-full bg-indigo-500" />
+                    🌍 全局市場假設 (快速套用)
+                  </h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ETF_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        onClick={() => { 
+                          updateBasic("annualReturn", preset.return); 
+                          updateMC("volatility", preset.vol); 
+                        }}
+                        className="px-2.5 py-1 text-xs rounded-full border transition-all hover:bg-white/5 active:scale-95"
+                        style={{ 
+                          borderColor: basicParams.annualReturn === preset.return ? "var(--accent-primary)" : "var(--border-subtle)", 
+                          background: basicParams.annualReturn === preset.return ? "var(--accent-primary-dim)" : "transparent",
+                          color: basicParams.annualReturn === preset.return ? "var(--accent-primary)" : "var(--text-secondary)" 
+                        }}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] mt-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                    💡 點選將自動設定「預期報酬率」與「市場波動率」，適用於所有試算分頁。
+                  </p>
+                </div>
 
                 {/* --- 複利試算 --- */}
                 {activeTab === "basic" && (
@@ -571,19 +600,6 @@ function SimulatorContent() {
                         <span className="w-1.5 h-4 rounded-full bg-orange-500" />
                         📈 市場風險與標的預設
                       </h3>
-                      <p className="text-xs mb-3 font-medium" style={{ color: "var(--text-muted)" }}>快速套用 ETF 歷史數據</p>
-                      <div className="flex flex-wrap gap-1.5 mb-5">
-                        {ETF_PRESETS.map((preset) => (
-                          <button
-                            key={preset.name}
-                            onClick={() => { updateBasic("annualReturn", preset.return); updateMC("volatility", preset.vol); }}
-                            className="px-2.5 py-1 text-xs rounded-full border transition-colors hover:bg-white/5"
-                            style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}
-                          >
-                            {preset.name}
-                          </button>
-                        ))}
-                      </div>
                       <SliderInput id="annualReturn" label="預期年化報酬率 (均值)" value={basicParams.annualReturn} onChange={(v) => updateBasic("annualReturn", v)} min={0} max={30} step={0.5} unit="%" hint="蒙地卡羅會以此均值為中心進行隨機震盪。" />
                       <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
                       <SliderInput id="investmentYears" label="預計模擬年限" value={basicParams.investmentYears} onChange={(v) => updateBasic("investmentYears", v)} min={1} max={50} step={1} unit="年" />
