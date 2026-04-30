@@ -70,7 +70,7 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
               color: "var(--text-primary)",
             }}
             labelFormatter={(label) => `📉 退場第 ${label} 年`}
-            formatter={(value: any, name: any, props: any) => {
+            formatter={(value: any, name: any) => {
               if (name === "median") return [formatTWD(Number(value) * 10000), "資產中位數 (P50)"];
               if (name === "range75_25") return [`${formatTWD(value[0] * 10000)} ~ ${formatTWD(value[1] * 10000)}`, "大概率落點區 (P25 - P75)"];
               if (name === "range90_10") return [`${formatTWD(value[0] * 10000)} ~ ${formatTWD(value[1] * 10000)}`, "極端狀況區 (P10 - P90)"];

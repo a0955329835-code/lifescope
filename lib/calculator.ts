@@ -298,7 +298,7 @@ export function calculateHousingCompare(params: HousingParams): HousingCompareDa
  * 計算達成財務自由所需年數
  * 財務自由 = 資產 × 4% 被動收入 >= 年支出
  */
-export function calculateFIREAge(params: BasicParams, lifeStages?: LifeStage[]): number | null {
+export function calculateFIREAge(params: BasicParams, lifeStages: LifeStage[] = []): number | null {
   const { currentAssets, monthlyInvestment, monthlyExpense, annualReturn, inflationRate, salaryGrowthRate = 0 } = params;
   const monthlyRate = annualReturn / 100 / 12;
   const yearlyExpense = monthlyExpense * 12;

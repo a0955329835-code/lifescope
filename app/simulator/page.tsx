@@ -203,7 +203,7 @@ function SimulatorContent() {
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam === "housing" || tabParam === "basic" || tabParam === "mc") {
-      setActiveTab(tabParam as any);
+      setActiveTab(tabParam as "basic" | "housing" | "mc");
     } else {
       setActiveTab("basic");
     }
@@ -317,7 +317,7 @@ function SimulatorContent() {
       });
       const data = await res.json();
       setMcResult(data);
-    } catch (e) {
+    } catch {
       alert("模擬失敗，請稍後再試或檢查網路！");
     } finally {
       setIsLoadingMC(false);

@@ -1,4 +1,4 @@
-import { BasicParams, HousingParams, LifeStage } from "./calculator";
+import { BasicParams } from "./calculator";
 
 // localStorage 劇本管理
 export interface Scenario {

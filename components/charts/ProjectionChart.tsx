@@ -2,16 +2,15 @@
 
 import { useMemo } from "react";
 import {
-  LineChart,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
   Area,
   ComposedChart,
   Line,
-  Legend,
 } from "recharts";
 import { YearlyData, formatTWD } from "@/lib/calculator";
 
@@ -51,7 +50,7 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
             dataKey="year"
             axisLine={false}
             tickLine={false}
-            tickFormatter={(val) => `第 ${val} 年`}
+            tickFormatter={(val: number) => `第 ${val} 年`}
             dy={10}
             minTickGap={30}
           />
@@ -59,7 +58,7 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
             width={75}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(val) => `${val} 萬`}
+            tickFormatter={(val: number) => `${val} 萬`}
             dx={-10}
           />
           <Tooltip
