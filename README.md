@@ -11,8 +11,9 @@
 
 ## 🚀 核心功能 (Features)
 
-1. **基礎複利試算 (Basic Projection)**
+1. **基礎複利試算與人生時間軸 (Basic Projection & Life Events)**
    - 高流暢度的動態滑桿參數調整。
+   - **自訂重大事件**：獨家實作人生重大事件時間軸模組，可讓使用者自由加入單年度的意外收支（例如買車、結婚、生子或收到遺產），並在圖表上以動態標記 (Reference Dots) 與自訂 Tooltip 視覺化呈現。
    - 採用 Recharts 實作極具現代感的資產增長 Area Chart。
 2. **買房 vs 租屋決策引擎 (Housing vs Renting)**
    - 房貸本息攤還精密計算。
