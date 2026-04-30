@@ -12,10 +12,12 @@ import {
   ComposedChart,
   Line,
   Legend,
+  ReferenceDot,
+  Label,
 } from "recharts";
 import { YearlyData, formatTWD } from "@/lib/calculator";
 
-export default function ProjectionChart({ data }: { data: YearlyData[] }) {
+export default function ProjectionChart({ data, events = [] }: { data: YearlyData[], events?: { year: number; name: string; amount: number }[] }) {
   const formattedData = useMemo(() => {
     return data.map((d) => ({
       ...d,
@@ -24,6 +26,7 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
       displayInvested: Math.round(d.invested / 10000), // 轉成萬
       displayPortfolio: d.portfolioValue ? Math.round(d.portfolioValue / 10000) : Math.round(d.assets / 10000),
       displayLoan: d.loanBalance ? Math.round(d.loanBalance / 10000) : 0,
+      eventImpact: d.eventImpact || 0,
     }));
   }, [data]);
 
@@ -72,12 +75,21 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
               color: "var(--text-primary)",
             }}
             itemStyle={{ color: "var(--text-primary)" }}
-            labelFormatter={(label) => `第 ${label} 年`}
+            labelFormatter={(label) => {
+              const yearEvents = events.filter(e => e.year === label);
+              if (yearEvents.length > 0) {
+                const eventText = yearEvents.map(e => `${e.name} (${e.amount >= 0 ? '+' : ''}${formatTWD(e.amount)})`).join(", ");
+                return `第 ${label} 年 — 🌟 ${eventText}`;
+              }
+              return `第 ${label} 年`;
+            }}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, name: any) => {
               if (name === "displayPortfolio") return [formatTWD(Number(value) * 10000), "投資帳戶總市值 (含借款)"];
               if (name === "displayRealAssets") return [formatTWD(Number(value) * 10000), "真實淨資產 (扣除借款/通膨)"];
               if (name === "displayInvested") return [formatTWD(Number(value) * 10000), "累計投入本金"];
               if (name === "displayLoan") return [formatTWD(Number(value) * 10000), "尚未還清貸款"];
+              if (name === "eventImpact") return [formatTWD(Number(value)), "🌟 該年事件影響"];
               return [value, name];
             }}
           />
@@ -119,6 +131,23 @@ export default function ProjectionChart({ data }: { data: YearlyData[] }) {
             fillOpacity={1}
             fill="url(#colorAssets)"
           />
+          {events.map((ev, i) => {
+            const dataPoint = formattedData.find((d) => d.year === ev.year);
+            if (!dataPoint) return null;
+            return (
+              <ReferenceDot
+                key={i}
+                x={ev.year}
+                y={dataPoint.displayAssets}
+                r={6}
+                fill="var(--bg-primary)"
+                stroke="var(--accent-primary)"
+                strokeWidth={2}
+              >
+                <Label value={`🌟 ${ev.name}`} position="top" fill="var(--text-primary)" fontSize={12} offset={10} />
+              </ReferenceDot>
+            );
+          })}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
