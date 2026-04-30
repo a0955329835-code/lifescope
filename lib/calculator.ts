@@ -14,6 +14,7 @@ export interface BasicParams {
   leverageRate?: number;      // 借貸年利率 (%)
   leverageYears?: number;     // 借貸年限
   leverageRecurYears?: number; // 自動續借頻率 (年, 0 代表不續借)
+  customEvents?: { year: number; name: string; amount: number }[]; // 人生重大事件
 }
 
 export interface HousingParams {
@@ -38,6 +39,7 @@ export interface YearlyData {
   returns: number;        // 累計報酬
   portfolioValue?: number; // 投資帳戶總市值 (含借款)
   loanBalance?: number;    // 尚未還清之借貸本金
+  eventImpact?: number;    // 當年發生的人生事件金額加總
 }
 
 export interface HousingCompareData {
@@ -112,6 +114,7 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     leverageRate = 0,
     leverageYears = 0,
     leverageRecurYears = 0,
+    customEvents = [],
   } = params;
 
   const monthlyRate = annualReturn / 100 / 12;
@@ -135,6 +138,7 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     returns: 0,
     portfolioValue: Math.round(assets),
     loanBalance: Math.round(remainingLoan),
+    eventImpact: 0,
   });
 
   for (let year = 1; year <= investmentYears; year++) {
@@ -167,6 +171,13 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
       totalInvested += adjustedInvestment;
     }
 
+    // 計算當年發生的事件
+    const currentYearEvents = customEvents.filter(e => e.year === year);
+    const eventTotal = currentYearEvents.reduce((sum, e) => sum + e.amount, 0);
+
+    // 一次性加入/扣除資產 (此處假設事件的現金流直接加減於資產池中，正數增加，負數減少)
+    assets += eventTotal;
+
     const discountFactor = Math.pow(1 + inflationRate / 100, year);
     const netAssets = assets - remainingLoan; // 扣除未償還的負債
 
@@ -178,6 +189,7 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
       returns: Math.round(netAssets - totalInvested),
       portfolioValue: Math.round(assets),
       loanBalance: Math.round(remainingLoan),
+      eventImpact: eventTotal,
     });
   }
 

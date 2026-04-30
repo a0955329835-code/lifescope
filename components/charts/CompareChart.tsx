@@ -58,6 +58,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
             }}
             itemStyle={{ color: "var(--text-primary)" }}
             labelFormatter={(label) => `第 ${label} 年`}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, name: any) => {
               if (name === "displayRentNetWorth") return [formatTWD(Number(value) * 10000), "租屋方案淨資產"];
               if (name === "displayBuyNetWorth") return [formatTWD(Number(value) * 10000), "買房方案淨資產"];
