@@ -203,7 +203,7 @@ function SimulatorContent() {
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam === "housing" || tabParam === "basic" || tabParam === "mc") {
-      setActiveTab(tabParam as any);
+      setActiveTab(tabParam as "basic" | "housing" | "mc");
     } else {
       setActiveTab("basic");
     }
@@ -226,6 +226,7 @@ function SimulatorContent() {
     leverageRate: 2.5,
     leverageYears: 7,
     leverageRecurYears: 0,
+    customEvents: [],
   });
 
   const [isLeverageEnabled, setIsLeverageEnabled] = useState(false);
@@ -267,9 +268,11 @@ function SimulatorContent() {
     isDynamic: false,
     dynamicRatio: 20,
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [mcResult, setMcResult] = useState<any>(null);
   const [isLoadingMC, setIsLoadingMC] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateMC = useCallback((key: string, val: any) => {
     setMcParams((p) => ({ ...p, [key]: val }));
   }, []);
@@ -317,7 +320,7 @@ function SimulatorContent() {
       });
       const data = await res.json();
       setMcResult(data);
-    } catch (e) {
+    } catch {
       alert("模擬失敗，請稍後再試或檢查網路！");
     } finally {
       setIsLoadingMC(false);
@@ -496,6 +499,88 @@ function SimulatorContent() {
                       updateBasic={updateBasic}
                       computedMonthlyLoan={computedMonthlyLoan}
                     />
+
+                    <div className="mt-6 border-t pt-5" style={{ borderColor: "var(--border-subtle)" }}>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                          <span className="w-1.5 h-4 rounded-full bg-pink-500" />
+                          🌟 人生重大事件 (Life Events)
+                        </h3>
+                        <button
+                          onClick={() => {
+                            const newEvents = [...(basicParams.customEvents || []), { year: 5, name: "買車", amount: -800000 }];
+                            updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                          }}
+                          className="px-2 py-1 rounded text-xs hover:bg-white/5 border border-transparent hover:border-[var(--border-subtle)] transition-colors"
+                          style={{ color: "var(--accent-primary)" }}
+                        >
+                          ＋ 新增事件
+                        </button>
+                      </div>
+
+                      {(basicParams.customEvents || []).length === 0 ? (
+                        <p className="text-xs text-center p-4 rounded-xl" style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                          尚未新增事件。你可以加入結婚、生子、買車或收到遺產等一次性大筆現金流。
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {(basicParams.customEvents || []).map((ev, i) => (
+                            <div key={i} className="flex flex-wrap items-center gap-2 p-3 rounded-lg" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
+                              <div className="flex items-center gap-1 w-20">
+                                <span className="text-xs" style={{ color: "var(--text-muted)" }}>第</span>
+                                <input
+                                  type="number"
+                                  value={ev.year}
+                                  onChange={(e) => {
+                                    const newEvents = [...(basicParams.customEvents || [])];
+                                    newEvents[i].year = Math.max(1, Number(e.target.value));
+                                    updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                  }}
+                                  className="input-field !py-1 !px-2 text-xs text-center flex-1 min-w-0"
+                                />
+                                <span className="text-xs" style={{ color: "var(--text-muted)" }}>年</span>
+                              </div>
+                              <input
+                                type="text"
+                                value={ev.name}
+                                onChange={(e) => {
+                                  const newEvents = [...(basicParams.customEvents || [])];
+                                  newEvents[i].name = e.target.value;
+                                    updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                }}
+                                className="input-field !py-1 !px-2 text-xs flex-1 min-w-[80px]"
+                                placeholder="事件名稱"
+                              />
+                              <input
+                                type="number"
+                                value={ev.amount}
+                                onChange={(e) => {
+                                  const newEvents = [...(basicParams.customEvents || [])];
+                                  newEvents[i].amount = Number(e.target.value);
+                                    updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                }}
+                                className={`input-field !py-1 !px-2 text-xs w-28 text-right font-medium ${ev.amount >= 0 ? "text-green-500" : "text-red-400"}`}
+                                placeholder="金額 (+收入/-支出)"
+                              />
+                              <button
+                                onClick={() => {
+                                  const newEvents = [...(basicParams.customEvents || [])];
+                                  newEvents.splice(i, 1);
+                                  updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                }}
+                                className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-[11px] mt-2 opacity-60 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                        💡 正數代表一筆意外之財 (如遺產)，負數代表大筆支出 (如買車)。這將在該年直接加減你的淨資產。
+                      </p>
+                    </div>
+
                   </>
                 )}
 
@@ -777,7 +862,7 @@ function SimulatorContent() {
 
                   <div className="glass-card p-5">
                     <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>資產成長曲線</h3>
-                    <ProjectionChart data={projectionData} />
+                    <ProjectionChart data={projectionData} events={basicParams.customEvents} />
                   </div>
                 </>
               ) : activeTab === "housing" ? (
