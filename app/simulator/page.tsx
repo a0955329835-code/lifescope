@@ -154,7 +154,7 @@ function ToggleSwitch({ checked, onChange, colorClass }: { checked: boolean, onC
   return (
     <label className="relative inline-flex items-center cursor-pointer">
       <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:${colorClass}`}></div>
+      <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 ${colorClass}`}></div>
     </label>
   );
 }
@@ -184,7 +184,7 @@ function LeverageBlock({
             setIsLeverageEnabled(v);
             if (!v) updateBasic("leverageAmount", 0);
           }}
-          colorClass="bg-blue-500"
+          colorClass="peer-checked:bg-blue-500"
         />
       </SubSectionHeader>
 
@@ -314,7 +314,8 @@ function SimulatorContent() {
     scenarioId: "custom",
     blackSwanYear: 0,
     blackSwanDrop: 30,
-    jumpProbability: 0,
+    isJumpEnabled: false,
+    jumpProbability: 5,
     jumpImpact: 20,
     isDynamic: false,
     dynamicRatio: 20,
@@ -347,7 +348,7 @@ function SimulatorContent() {
         volatility: mcParams.volatility,
         inflationMean: basicParams.inflationRate,
         blackSwanEvents: scenarioEvents,
-        jumpProbability: mcParams.jumpProbability,
+        jumpProbability: mcParams.isJumpEnabled ? mcParams.jumpProbability : 0,
         jumpImpact: mcParams.jumpImpact,
         isDynamic: mcParams.isDynamic,
         dynamicRatio: mcParams.dynamicRatio,
@@ -378,7 +379,7 @@ function SimulatorContent() {
     }
   };
 
-  const updateBasic = useCallback((key: keyof BasicParams, val: number) => {
+  const updateBasic = useCallback(<K extends keyof BasicParams>(key: K, val: BasicParams[K]) => {
     setBasicParams((p) => ({ ...p, [key]: val }));
   }, []);
 
@@ -441,7 +442,12 @@ function SimulatorContent() {
       setHousingParams(scenario.housingParams);
     }
     if (scenario.mcParams) {
-      setMcParams(scenario.mcParams);
+      setMcParams((prev) => ({
+        ...prev,
+        ...scenario.mcParams,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        isJumpEnabled: (scenario.mcParams as any).isJumpEnabled || false,
+      }));
     }
     if (scenario.lifeStages) {
       setLifeStages(scenario.lifeStages);
@@ -552,7 +558,7 @@ function SimulatorContent() {
                       <button
                         onClick={() => {
                           const newEvents = [...(basicParams.customEvents || []), { year: 5, name: "買車", amount: -800000 }];
-                          updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                          updateBasic("customEvents", newEvents);
                         }}
                         className="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white/5 border border-transparent hover:border-[var(--border-subtle)] transition-colors text-pink-500"
                       >
@@ -578,7 +584,7 @@ function SimulatorContent() {
                                   onChange={(e) => {
                                     const newEvents = [...(basicParams.customEvents || [])];
                                     newEvents[i].year = Math.max(1, Number(e.target.value));
-                                    updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                    updateBasic("customEvents", newEvents);
                                   }}
                                   className="input-field !py-1 !px-2 text-xs text-center flex-1 min-w-0"
                                 />
@@ -590,7 +596,7 @@ function SimulatorContent() {
                                 onChange={(e) => {
                                   const newEvents = [...(basicParams.customEvents || [])];
                                   newEvents[i].name = e.target.value;
-                                    updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                  updateBasic("customEvents", newEvents);
                                 }}
                                 className="input-field !py-1 !px-2 text-xs flex-1 min-w-[80px]"
                                 placeholder="事件名稱"
@@ -601,7 +607,7 @@ function SimulatorContent() {
                                 onChange={(e) => {
                                   const newEvents = [...(basicParams.customEvents || [])];
                                   newEvents[i].amount = Number(e.target.value);
-                                    updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                  updateBasic("customEvents", newEvents);
                                 }}
                                 className={`input-field !py-1 !px-2 text-xs w-28 text-right font-medium ${ev.amount >= 0 ? "text-green-500" : "text-red-400"}`}
                                 placeholder="金額 (+收入/-支出)"
@@ -610,7 +616,7 @@ function SimulatorContent() {
                                 onClick={() => {
                                   const newEvents = [...(basicParams.customEvents || [])];
                                   newEvents.splice(i, 1);
-                                  updateBasic("customEvents" as keyof BasicParams, newEvents as unknown as number);
+                                  updateBasic("customEvents", newEvents);
                                 }}
                                 className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
                               >
@@ -723,27 +729,28 @@ function SimulatorContent() {
                         </InfoBox>
                       )}
 
-                    <SubSectionHeader title="進階策略 (Advanced Options)" colorHex="#6366f1" />
+                    <SubSectionHeader title="跳躍擴散模型 (每年隨機崩盤)" colorHex="#6366f1">
+                      <ToggleSwitch checked={mcParams.isJumpEnabled} onChange={(v) => updateMC("isJumpEnabled", v)} colorClass="peer-checked:bg-indigo-500" />
+                    </SubSectionHeader>
 
-                    <InfoBox colorHex="#6366f1" dashed>
-                      <p className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>跳躍擴散模型 (每年隨機崩盤)</p>
-                      <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>💡 除指定劇本外，每年額外觸發無預警黑天鵝的機率。</p>
-                      <SliderInput id="jumpProbability" label="每年發生機率" value={mcParams.jumpProbability} onChange={(v) => updateMC("jumpProbability", v)} min={0} max={20} step={1} unit="%" hint="0 代表關閉隨機黑天鵝" />
-                      {mcParams.jumpProbability > 0 && (
+                    {mcParams.isJumpEnabled && (
+                      <InfoBox colorHex="#6366f1" dashed>
+                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>💡 除下方指定的歷史劇本外，每年額外觸發無預警黑天鵝的機率與跌幅。</p>
+                        <SliderInput id="jumpProbability" label="每年發生機率" value={mcParams.jumpProbability} onChange={(v) => updateMC("jumpProbability", v)} min={1} max={20} step={1} unit="%" />
                         <SliderInput id="jumpImpact" label="單次崩盤跌幅" value={mcParams.jumpImpact} onChange={(v) => updateMC("jumpImpact", v)} min={5} max={50} step={5} unit="%" />
-                      )}
-                    </InfoBox>
+                      </InfoBox>
+                    )}
 
-                    <InfoBox colorHex="#10b981" dashed>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>動態提領防禦 (Dynamic Spending)</p>
-                        <ToggleSwitch checked={mcParams.isDynamic} onChange={(v) => updateMC("isDynamic", v)} colorClass="bg-emerald-500" />
-                      </div>
-                      <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>🛡️ 市場下跌年份自動縮減生活費，可大幅提升資產存活率！</p>
-                      {mcParams.isDynamic && (
+                    <SubSectionHeader title="動態提領防禦 (Dynamic Spending)" colorHex="#10b981">
+                      <ToggleSwitch checked={mcParams.isDynamic} onChange={(v) => updateMC("isDynamic", v)} colorClass="peer-checked:bg-emerald-500" />
+                    </SubSectionHeader>
+
+                    {mcParams.isDynamic && (
+                      <InfoBox colorHex="#10b981" dashed>
+                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>🛡️ 當遭遇市場下跌的年份，系統將自動縮減該年度的生活費，此防禦機制可大幅提升退休資產的存活機率！</p>
                         <SliderInput id="dynamicRatio" label="縮減提領比例" value={mcParams.dynamicRatio} onChange={(v) => updateMC("dynamicRatio", v)} min={5} max={50} step={5} unit="%" />
-                      )}
-                    </InfoBox>
+                      </InfoBox>
+                    )}
 
                     <button
                       onClick={runMonteCarlo}
