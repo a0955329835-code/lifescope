@@ -14,6 +14,7 @@ export interface BasicParams {
   leverageRate?: number;      // 借貸年利率 (%)
   leverageYears?: number;     // 借貸年限
   leverageRecurYears?: number; // 自動續借頻率 (年, 0 代表不續借)
+  isEventsEnabled?: boolean;   // 是否開啟人生重大事件
   customEvents?: { year: number; name: string; amount: number }[]; // 人生重大事件
 }
 
@@ -114,6 +115,7 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     leverageRate = 0,
     leverageYears = 0,
     leverageRecurYears = 0,
+    isEventsEnabled = false,
     customEvents = [],
   } = params;
 
@@ -172,12 +174,15 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     }
 
     // 計算當年發生的事件
-    const currentYearEvents = customEvents.filter(e => e.year === year);
-    const eventTotal = currentYearEvents.reduce((sum, e) => sum + e.amount, 0);
+    let eventTotal = 0;
+    if (isEventsEnabled) {
+      const currentYearEvents = customEvents.filter(e => e.year === year);
+      eventTotal = currentYearEvents.reduce((sum, e) => sum + e.amount, 0);
 
-    // 一次性加入/扣除資產與投入本金 (此處假設事件的現金流為額外的本金加碼/抽回)
-    assets += eventTotal;
-    totalInvested += eventTotal;
+      // 一次性加入/扣除資產與投入本金 (此處假設事件的現金流為額外的本金加碼/抽回)
+      assets += eventTotal;
+      totalInvested += eventTotal;
+    }
 
     const discountFactor = Math.pow(1 + inflationRate / 100, year);
     const netAssets = assets - remainingLoan; // 扣除未償還的負債
