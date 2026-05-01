@@ -137,7 +137,7 @@ export default function ProjectionChart({ data, events = [] }: { data: YearlyDat
               <ReferenceDot
                 key={i}
                 x={ev.year}
-                y={dataPoint.displayAssets}
+                y={dataPoint.displayRealAssets}
                 r={6}
                 fill="var(--bg-primary)"
                 stroke="var(--accent-primary)"

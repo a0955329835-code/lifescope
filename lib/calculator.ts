@@ -175,8 +175,9 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     const currentYearEvents = customEvents.filter(e => e.year === year);
     const eventTotal = currentYearEvents.reduce((sum, e) => sum + e.amount, 0);
 
-    // 一次性加入/扣除資產 (此處假設事件的現金流直接加減於資產池中，正數增加，負數減少)
+    // 一次性加入/扣除資產與投入本金 (此處假設事件的現金流為額外的本金加碼/抽回)
     assets += eventTotal;
+    totalInvested += eventTotal;
 
     const discountFactor = Math.pow(1 + inflationRate / 100, year);
     const netAssets = assets - remainingLoan; // 扣除未償還的負債

@@ -1,6 +1,6 @@
 # LifeScope Monte Carlo Engine (AWS Lambda)
 
-這份文件說明如何將蒙地卡羅壓測引擎部署到 AWS Lambda。我們刻意採取「Console 介面手動部署 + 內建 Layer」的策略，以避開 Windows 環境下編譯 `numpy` 的跨平台地雷組合。
+這份文件說明如何將蒙地卡羅壓測引擎部署到 AWS Lambda。我們刻意採取「Console 介面手動部署 + 內建 Layer」的策略，以避開 Windows 環境下編譯 `numpy` 的跨平台地雷組合。本後端專門負責高密集運算的 **蒙地卡羅壓力測試**，而基礎的複利試算（包含最近新增的「人生重大事件時間軸」模組）則全數在前端瀏覽器進行。
 
 ## 部署步驟
 
