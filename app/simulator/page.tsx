@@ -114,7 +114,7 @@ function SliderInput({
 function SectionHeader({ icon, title, colorHex, bgColorHex }: { icon: string, title: string, colorHex: string, bgColorHex: string }) {
   return (
     <h2 className="font-bold text-lg mb-5 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shadow-sm" style={{ background: bgColorHex, color: colorHex, border: `1px solid ${colorHex}30` }}>
+      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shadow-sm" style={{ background: bgColorHex, color: colorHex }}>
         {icon}
       </span>
       {title}
@@ -277,6 +277,7 @@ function SimulatorContent() {
     leverageRate: 2.5,
     leverageYears: 7,
     leverageRecurYears: 0,
+    isEventsEnabled: false,
     customEvents: [],
   });
 
@@ -311,6 +312,7 @@ function SimulatorContent() {
   const [mcParams, setMcParams] = useState({
     phase: "accumulation",
     volatility: 15,
+    isScenarioEnabled: false,
     scenarioId: "custom",
     blackSwanYear: 0,
     blackSwanDrop: 30,
@@ -332,12 +334,15 @@ function SimulatorContent() {
   const runMonteCarlo = async () => {
     setIsLoadingMC(true);
     try {
-      const activeScenario = CRISIS_SCENARIOS.find(s => s.id === mcParams.scenarioId);
-      const startYear = mcParams.blackSwanYear;
-      
-      const scenarioEvents = activeScenario?.id === "custom"
-        ? (startYear > 0 ? [{ year: startYear, drop: mcParams.blackSwanDrop }] : [])
-        : (startYear > 0 ? (activeScenario?.events.map(ev => ({ year: startYear + ev.year, drop: ev.drop })) || []) : []);
+      let scenarioEvents: { year: number, drop: number }[] = [];
+      if (mcParams.isScenarioEnabled && mcParams.scenarioId !== "none") {
+        const activeScenario = CRISIS_SCENARIOS.find(s => s.id === mcParams.scenarioId);
+        const startYear = mcParams.blackSwanYear;
+
+        scenarioEvents = activeScenario?.id === "custom"
+          ? (startYear > 0 ? [{ year: startYear, drop: mcParams.blackSwanDrop }] : [])
+          : (startYear > 0 ? (activeScenario?.events.map(ev => ({ year: startYear + ev.year, drop: ev.drop })) || []) : []);
+      }
 
       const payload = {
         initialAssets: basicParams.currentAssets,
@@ -447,6 +452,8 @@ function SimulatorContent() {
         ...scenario.mcParams,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         isJumpEnabled: (scenario.mcParams as any).isJumpEnabled || false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        isScenarioEnabled: (scenario.mcParams as any).isScenarioEnabled || false,
       }));
     }
     if (scenario.lifeStages) {
@@ -555,80 +562,86 @@ function SimulatorContent() {
                     />
 
                     <SubSectionHeader title="🌟 人生重大事件 (Life Events)" colorHex="#ec4899">
-                      <button
-                        onClick={() => {
-                          const newEvents = [...(basicParams.customEvents || []), { year: 5, name: "買車", amount: -800000 }];
-                          updateBasic("customEvents", newEvents);
-                        }}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white/5 border border-transparent hover:border-[var(--border-subtle)] transition-colors text-pink-500"
-                      >
-                        ＋ 新增事件
-                      </button>
+                      <ToggleSwitch checked={basicParams.isEventsEnabled || false} onChange={(v) => updateBasic("isEventsEnabled", v)} colorClass="peer-checked:bg-pink-500" />
                     </SubSectionHeader>
 
-                    {(basicParams.customEvents || []).length === 0 ? (
+                    {basicParams.isEventsEnabled && (
                       <InfoBox colorHex="#ec4899" dashed>
-                        <p className="text-xs text-center text-pink-600/70 dark:text-pink-400/70">
-                          尚未新增事件。可加入結婚、買車或收到遺產等一次性現金流。
-                        </p>
-                      </InfoBox>
-                    ) : (
-                      <div className="space-y-3 mb-4">
-                          {(basicParams.customEvents || []).map((ev, i) => (
-                            <div key={i} className="flex flex-wrap items-center gap-2 p-3 rounded-lg" style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-subtle)" }}>
-                              <div className="flex items-center gap-1 w-20">
-                                <span className="text-xs" style={{ color: "var(--text-muted)" }}>第</span>
+                        <div className="flex justify-end mb-3">
+                          <button
+                            onClick={() => {
+                              const newEvents = [...(basicParams.customEvents || []), { year: 5, name: "買車", amount: -800000 }];
+                              updateBasic("customEvents", newEvents);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white/10 border border-pink-500/30 hover:border-pink-500 transition-colors text-pink-600 dark:text-pink-400"
+                          >
+                            ＋ 新增事件
+                          </button>
+                        </div>
+
+                        {(basicParams.customEvents || []).length === 0 ? (
+                          <p className="text-xs text-center text-pink-600/70 dark:text-pink-400/70 py-4">
+                            尚未新增事件。可加入結婚、買車或收到遺產等一次性現金流。
+                          </p>
+                        ) : (
+                          <div className="space-y-3 mb-4">
+                            {(basicParams.customEvents || []).map((ev, i) => (
+                              <div key={i} className="flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-white/50 dark:bg-black/20 border border-pink-500/20">
+                                <div className="flex items-center gap-1 w-20">
+                                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>第</span>
+                                  <input
+                                    type="number"
+                                    value={ev.year}
+                                    onChange={(e) => {
+                                      const newEvents = [...(basicParams.customEvents || [])];
+                                      newEvents[i].year = Math.max(1, Number(e.target.value));
+                                      updateBasic("customEvents", newEvents);
+                                    }}
+                                    className="input-field !py-1 !px-2 text-xs text-center flex-1 min-w-0"
+                                  />
+                                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>年</span>
+                                </div>
                                 <input
-                                  type="number"
-                                  value={ev.year}
+                                  type="text"
+                                  value={ev.name}
                                   onChange={(e) => {
                                     const newEvents = [...(basicParams.customEvents || [])];
-                                    newEvents[i].year = Math.max(1, Number(e.target.value));
+                                    newEvents[i].name = e.target.value;
                                     updateBasic("customEvents", newEvents);
                                   }}
-                                  className="input-field !py-1 !px-2 text-xs text-center flex-1 min-w-0"
+                                  className="input-field !py-1 !px-2 text-xs flex-1 min-w-[80px]"
+                                  placeholder="事件名稱"
                                 />
-                                <span className="text-xs" style={{ color: "var(--text-muted)" }}>年</span>
+                                <input
+                                  type="number"
+                                  value={ev.amount}
+                                  onChange={(e) => {
+                                    const newEvents = [...(basicParams.customEvents || [])];
+                                    newEvents[i].amount = Number(e.target.value);
+                                    updateBasic("customEvents", newEvents);
+                                  }}
+                                  className={`input-field !py-1 !px-2 text-xs w-28 text-right font-medium ${ev.amount >= 0 ? "text-green-500" : "text-red-400"}`}
+                                  placeholder="金額 (+收入/-支出)"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const newEvents = [...(basicParams.customEvents || [])];
+                                    newEvents.splice(i, 1);
+                                    updateBasic("customEvents", newEvents);
+                                  }}
+                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
+                                >
+                                  ✕
+                                </button>
                               </div>
-                              <input
-                                type="text"
-                                value={ev.name}
-                                onChange={(e) => {
-                                  const newEvents = [...(basicParams.customEvents || [])];
-                                  newEvents[i].name = e.target.value;
-                                  updateBasic("customEvents", newEvents);
-                                }}
-                                className="input-field !py-1 !px-2 text-xs flex-1 min-w-[80px]"
-                                placeholder="事件名稱"
-                              />
-                              <input
-                                type="number"
-                                value={ev.amount}
-                                onChange={(e) => {
-                                  const newEvents = [...(basicParams.customEvents || [])];
-                                  newEvents[i].amount = Number(e.target.value);
-                                  updateBasic("customEvents", newEvents);
-                                }}
-                                className={`input-field !py-1 !px-2 text-xs w-28 text-right font-medium ${ev.amount >= 0 ? "text-green-500" : "text-red-400"}`}
-                                placeholder="金額 (+收入/-支出)"
-                              />
-                              <button
-                                onClick={() => {
-                                  const newEvents = [...(basicParams.customEvents || [])];
-                                  newEvents.splice(i, 1);
-                                  updateBasic("customEvents", newEvents);
-                                }}
-                                className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    <p className="text-[11px] opacity-60 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                      💡 正數代表一筆意外之財 (如遺產)，負數代表大筆支出 (如買車)。這將在該年直接加減您的淨資產與投入本金。
-                    </p>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-[11px] opacity-60 leading-relaxed mt-2" style={{ color: "var(--text-muted)" }}>
+                          💡 正數代表一筆意外之財 (如遺產)，負數代表大筆支出 (如買車)。這將在該年直接加減您的淨資產與投入本金。
+                        </p>
+                      </InfoBox>
+                    )}
 
                   </>
                 )}
@@ -708,26 +721,31 @@ function SimulatorContent() {
                     <SubSectionHeader title="📈 市場風險設定" colorHex="#f97316" />
                     <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
 
-                    <SubSectionHeader title="歷史災難壓力測試 (黑天鵝劇本)" colorHex="#ef4444" />
-                      <select
-                        className="w-full p-2.5 rounded-lg border text-sm outline-none mb-3 font-medium transition-colors hover:border-[var(--accent-primary)] focus:border-[var(--accent-primary)]"
-                        style={{ background: "var(--bg-secondary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}
-                        value={mcParams.scenarioId}
-                        onChange={(e) => updateMC("scenarioId", e.target.value)}
-                      >
-                        {CRISIS_SCENARIOS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
-                      {mcParams.scenarioId !== "none" && (
+                    <SubSectionHeader title="歷史災難壓力測試 (黑天鵝劇本)" colorHex="#ef4444">
+                      <ToggleSwitch checked={mcParams.isScenarioEnabled} onChange={(v) => updateMC("isScenarioEnabled", v)} colorClass="peer-checked:bg-red-500" />
+                    </SubSectionHeader>
+
+                    {mcParams.isScenarioEnabled && (
+                      <div className="mb-4">
+                        <select
+                          className="w-full p-2.5 rounded-lg border text-sm outline-none mb-3 font-medium transition-colors hover:border-[var(--accent-primary)] focus:border-[var(--accent-primary)]"
+                          style={{ background: "var(--bg-secondary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}
+                          value={mcParams.scenarioId}
+                          onChange={(e) => updateMC("scenarioId", e.target.value)}
+                        >
+                          {CRISIS_SCENARIOS.filter(s => s.id !== "none").map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
                         <InfoBox colorHex="#ef4444" dashed>
                           <p className="text-xs mb-4 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                            💡 {CRISIS_SCENARIOS.find(s => s.id === mcParams.scenarioId)?.description}
+                            💡 {CRISIS_SCENARIOS.find(s => s.id === mcParams.scenarioId)?.description || CRISIS_SCENARIOS.find(s => s.id === "custom")?.description}
                           </p>
-                          <SliderInput id="blackSwanYear" label="劇本引爆時機 (第 X 年)" value={mcParams.blackSwanYear} onChange={(v) => updateMC("blackSwanYear", v)} min={0} max={basicParams.investmentYears} step={1} unit="年" hint="0 代表未觸發，拉動決定災難何時降臨。" />
-                          {mcParams.scenarioId === "custom" && mcParams.blackSwanYear > 0 && (
+                          <SliderInput id="blackSwanYear" label="劇本引爆時機 (第 X 年)" value={mcParams.blackSwanYear} onChange={(v) => updateMC("blackSwanYear", v)} min={1} max={basicParams.investmentYears} step={1} unit="年" hint="拉動決定災難何時降臨。" />
+                          {mcParams.scenarioId === "custom" && (
                             <SliderInput id="blackSwanDrop" label="當年崩盤跌幅" value={mcParams.blackSwanDrop} onChange={(v) => updateMC("blackSwanDrop", v)} min={10} max={80} step={5} unit="%" />
                           )}
                         </InfoBox>
-                      )}
+                      </div>
+                    )}
 
                     <SubSectionHeader title="跳躍擴散模型 (每年隨機崩盤)" colorHex="#6366f1">
                       <ToggleSwitch checked={mcParams.isJumpEnabled} onChange={(v) => updateMC("isJumpEnabled", v)} colorClass="peer-checked:bg-indigo-500" />
@@ -883,7 +901,7 @@ function SimulatorContent() {
 
                   <div className="glass-card p-5">
                     <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>資產成長曲線</h3>
-                    <ProjectionChart data={projectionData} events={basicParams.customEvents} />
+                    <ProjectionChart data={projectionData} events={basicParams.isEventsEnabled ? basicParams.customEvents : []} />
                   </div>
                 </>
               ) : activeTab === "housing" ? (
