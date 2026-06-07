@@ -26,8 +26,6 @@ export default function BasicTab({
   setIsLeverageEnabled,
   computedMonthlyLoan,
 }: BasicTabProps) {
-  const [isBankerOpen, setIsBankerOpen] = useState(false);
-
   return (
     <>
       <SectionHeader
@@ -76,64 +74,57 @@ export default function BasicTab({
       />
 
       {/* 🏦 理專進階實務建議設定 */}
-      <div className="mt-8 mb-5 border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
-        <button
-          type="button"
-          onClick={() => setIsBankerOpen(!isBankerOpen)}
-          className="w-full flex items-center justify-between font-bold text-base outline-none cursor-pointer text-left"
-          style={{ color: "var(--text-primary)" }}
-        >
-          <span className="flex items-center gap-2">
-            <span className="w-1.5 h-4 rounded-full shadow-sm" style={{ background: "var(--accent-warning)" }} />
-            🏦 理專進階實務建議設定
-          </span>
-          <span className={`text-xs transition-transform duration-300 ${isBankerOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }}>
-            ▼
-          </span>
-        </button>
+      <SubSectionHeader title="🏦 理專進階實務建議設定" colorHex="var(--accent-warning)">
+        <ToggleSwitch
+          checked={basicParams.isBankerEnabled || false}
+          onChange={(v) => {
+            updateBasic("isBankerEnabled", v);
+          }}
+          colorClass="peer-checked:bg-amber-500"
+        />
+      </SubSectionHeader>
 
-        {isBankerOpen && (
-          <div className="mt-4 space-y-4">
-            <SliderInput
-              id="frictionRate"
-              label="交易與稅務摩擦損耗"
-              value={basicParams.frictionRate || 0}
-              onChange={(v) => updateBasic("frictionRate", v)}
-              min={0}
-              max={3}
-              step={0.1}
-              unit="%"
-              hint="模擬交易手續費、ETF 內扣管理費與稅務拖累。台灣指數化投資建議設為 0.3% ~ 0.5%。"
-            />
-            
-            <div className="flex items-center justify-between py-2 border-t border-dashed border-amber-500/10">
-              <div>
-                <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>配置風險防禦保險 (Insurance Overlay)</p>
-                <p className="text-[10px] opacity-70" style={{ color: "var(--text-muted)" }}>規避人生中斷型財務黑天鵝事件的威脅</p>
-              </div>
-              <ToggleSwitch
-                checked={basicParams.isInsuranceEnabled || false}
-                onChange={(v) => updateBasic("isInsuranceEnabled", v)}
-                colorClass="peer-checked:bg-emerald-500"
-              />
+      {basicParams.isBankerEnabled && (
+        <InfoBox colorHex="var(--accent-warning)" dashed>
+          <SliderInput
+            id="frictionRate"
+            label="交易與稅務摩擦損耗"
+            value={basicParams.frictionRate || 0}
+            onChange={(v) => updateBasic("frictionRate", v)}
+            min={0}
+            max={3}
+            step={0.1}
+            unit="%"
+            hint="模擬交易手續費、ETF 內扣管理費與稅務拖累。台灣指數化投資建議設為 0.3% ~ 0.5%。"
+          />
+          
+          <div className="flex items-center justify-between py-2 border-t border-dashed border-amber-500/10">
+            <div>
+              <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>配置風險防禦保險 (Insurance Overlay)</p>
+              <p className="text-[10px] opacity-70" style={{ color: "var(--text-muted)" }}>規避人生中斷型財務黑天鵝事件的威脅</p>
             </div>
-
-            {basicParams.isInsuranceEnabled && (
-              <SliderInput
-                id="insurancePremium"
-                label="每月壽險/醫療險保費"
-                value={basicParams.insurancePremium || 1500}
-                onChange={(v) => updateBasic("insurancePremium", v)}
-                min={0}
-                max={20000}
-                step={500}
-                unit="元"
-                hint="保費將作為必需支出按月自現金流扣除，但在遭遇「保險理賠範圍」的意外中斷事件時可獲得全額理賠。"
-              />
-            )}
+            <ToggleSwitch
+              checked={basicParams.isInsuranceEnabled || false}
+              onChange={(v) => updateBasic("isInsuranceEnabled", v)}
+              colorClass="peer-checked:bg-emerald-500"
+            />
           </div>
-        )}
-      </div>
+
+          {basicParams.isInsuranceEnabled && (
+            <SliderInput
+              id="insurancePremium"
+              label="每月壽險/醫療險保費"
+              value={basicParams.insurancePremium || 1500}
+              onChange={(v) => updateBasic("insurancePremium", v)}
+              min={0}
+              max={20000}
+              step={500}
+              unit="元"
+              hint="保費將作為必需支出按月自現金流扣除，但在遭遇「保險理賠範圍」的意外中斷事件時可獲得全額理賠。"
+            />
+          )}
+        </InfoBox>
+      )}
 
       <SubSectionHeader title="🌟 人生重大事件 (Life Events)" colorHex="#ec4899">
         <ToggleSwitch

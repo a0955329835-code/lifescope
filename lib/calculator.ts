@@ -28,6 +28,7 @@ export interface BasicParams {
   frictionRate?: number;       // 交易與稅務摩擦損耗年利率 (%)
   isInsuranceEnabled?: boolean; // 是否配置風險防禦保險
   insurancePremium?: number;   // 每月保費 (元)
+  isBankerEnabled?: boolean;   // 是否開啟理專進階建議設定
 }
 
 export interface HousingParams {
@@ -133,10 +134,12 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     frictionRate = 0,
     isInsuranceEnabled = false,
     insurancePremium = 0,
+    isBankerEnabled = false,
   } = params;
 
-  // 投資年化報酬率扣除摩擦損耗，最少為 0%
-  const effectiveReturn = Math.max(0, annualReturn - frictionRate);
+  // 投資年化報酬率扣除摩擦損耗 (僅在理專建議開啟時生效)
+  const actualFriction = isBankerEnabled ? frictionRate : 0;
+  const effectiveReturn = Math.max(0, annualReturn - actualFriction);
   const monthlyRate = effectiveReturn / 100 / 12;
   const data: YearlyData[] = [];
   
@@ -177,8 +180,8 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     const isPayingLoan = leverageRecurYears > 0 || year <= leverageYears;
     const loanDeduction = (leverageAmount > 0 && isPayingLoan) ? monthlyLoanPayment : 0;
 
-    // 保費作為必需性現金支出，按月扣除
-    const monthlyInsuranceDeduction = isInsuranceEnabled ? insurancePremium : 0;
+    // 保費作為必需性現金支出，按月扣除 (僅在理專建議與保險均開啟時生效)
+    const monthlyInsuranceDeduction = (isBankerEnabled && isInsuranceEnabled) ? insurancePremium : 0;
 
     for (let month = 0; month < 12; month++) {
       // 每月資產增長 = 先計算本月投資報酬，再加入(或扣除)現金流（含保費）
@@ -213,8 +216,8 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
       for (const ev of activeEvents) {
         let impact = ev.amount;
 
-        // 若屬於收入中斷型事件，且使用者啟用了保險防護罩，且該事件為可保險項目：
-        if (ev.type === "interruption" && isInsuranceEnabled && ev.isInsurable) {
+        // 若屬於收入中斷型事件，且使用者啟用了理專建議與保險防護罩，且該事件為可保險項目：
+        if (ev.type === "interruption" && isBankerEnabled && isInsuranceEnabled && ev.isInsurable) {
           // 保險理賠覆蓋：淨損失歸零
           impact = 0;
         }

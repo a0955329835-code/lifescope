@@ -97,6 +97,7 @@ function SimulatorContent() {
     frictionRate: 0.3,
     isInsuranceEnabled: false,
     insurancePremium: 1500,
+    isBankerEnabled: false,
   });
 
   const [isLeverageEnabled, setIsLeverageEnabled] = useState(false);
@@ -264,6 +265,7 @@ function SimulatorContent() {
       frictionRate: 0.3,
       isInsuranceEnabled: false,
       insurancePremium: 1500,
+      isBankerEnabled: false,
       ...scenario.params,
     });
     if (scenario.housingParams) {
