@@ -529,12 +529,6 @@ function SimulatorContent() {
                     </div>
                   )}
 
-                  <GoalPlanner
-                    currentAssets={basicParams.currentAssets}
-                    currentReturn={basicParams.annualReturn}
-                    currentInvestment={basicParams.monthlyInvestment}
-                  />
-
                   <div className="glass-card p-5">
                     <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>資產成長曲線</h3>
                     <ProjectionChart
@@ -543,6 +537,12 @@ function SimulatorContent() {
                       onEventClick={handleEventClick}
                     />
                   </div>
+
+                  <GoalPlanner
+                    currentAssets={basicParams.currentAssets}
+                    currentReturn={basicParams.annualReturn}
+                    currentInvestment={basicParams.monthlyInvestment}
+                  />
                 </>
               ) : activeTab === "housing" ? (
                 <>

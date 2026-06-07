@@ -356,7 +356,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: #0b0f1a !important;
     box-shadow: none !important;
     break-inside: avoid;
-    margin-bottom: 20px !important;
+    page-break-inside: avoid;
+    margin-top: 20px !important;
+    margin-bottom: 25px !important;
   }
 
   /* 覆蓋可能自帶深色 background inline style 的容器，統一改為淺灰或透明 */
@@ -392,13 +394,17 @@ input[type="range"]::-webkit-slider-thumb:hover {
     fill: #475569 !important;
   }
 
-  /* 強制 Recharts 圖表縮放以適應列印寬度，防止超出邊框 */
+  /* 強制 Recharts 圖表縮放以適應列印寬度，防止超出邊框與高度塌陷 */
   .recharts-responsive-container,
-  .recharts-wrapper,
+  .recharts-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 320px !important;
+  }
   .recharts-wrapper svg {
     width: 100% !important;
     max-width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
   }
 
   .no-print {
