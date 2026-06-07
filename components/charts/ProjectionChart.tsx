@@ -16,8 +16,17 @@ import {
 } from "recharts";
 import { YearlyData, formatTWD } from "@/lib/calculator";
 
-export default function ProjectionChart({ data, events = [] }: { data: YearlyData[], events?: { year: number; name: string; amount: number }[] }) {
+export default function ProjectionChart({
+  data,
+  events = [],
+  onEventClick,
+}: {
+  data: YearlyData[];
+  events?: { year: number; name: string; amount: number }[];
+  onEventClick?: (year: number, index: number) => void;
+}) {
   const formattedData = useMemo(() => {
+
     return data.map((d) => ({
       ...d,
       displayAssets: Math.round(d.assets / 10000), // 轉成萬
@@ -142,9 +151,12 @@ export default function ProjectionChart({ data, events = [] }: { data: YearlyDat
                 fill="var(--bg-primary)"
                 stroke="var(--accent-primary)"
                 strokeWidth={2}
+                style={{ cursor: "pointer" }}
+                onClick={() => onEventClick?.(ev.year, i)}
               >
                 <Label value={`🌟 ${ev.name}`} position="top" fill="var(--text-primary)" fontSize={12} offset={10} />
               </ReferenceDot>
+
             );
           })}
         </ComposedChart>

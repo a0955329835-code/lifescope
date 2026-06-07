@@ -107,7 +107,8 @@ export default function BasicTab({
               {(basicParams.customEvents || []).map((ev, i) => (
                 <div
                   key={i}
-                  className="flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-white/50 dark:bg-black/20 border border-pink-500/20"
+                  id={`life-event-${ev.year}-${i}`}
+                  className="flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-white/50 dark:bg-black/20 border border-pink-500/20 transition-all duration-300"
                 >
                   <div className="flex items-center gap-1 w-20">
                     <span className="text-xs" style={{ color: "var(--text-muted)" }}>第</span>

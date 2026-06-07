@@ -29,18 +29,33 @@ export function SliderInput({
   hint?: string;
 }) {
   const [localValue, setLocalValue] = useState(value);
+  const [currentMax, setCurrentMax] = useState(max);
 
-  // 當外部傳入的值變動時（例如載入劇本），同步更新局部狀態
+  // 當外部傳入的值變動時（例如載入劇本），同步更新局部狀態與最大值上限
   useEffect(() => {
     setLocalValue(value);
+    if (value > currentMax) {
+      setCurrentMax(Math.ceil(value * 1.5));
+    }
   }, [value]);
+
+  // 同步外部的最大值上限變動
+  useEffect(() => {
+    if (max > currentMax || (max !== currentMax && value <= max)) {
+      setCurrentMax(max);
+    }
+  }, [max]);
 
   const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(Number(e.target.value));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalValue(Number(e.target.value));
+    const val = Number(e.target.value);
+    setLocalValue(val);
+    if (val > currentMax) {
+      setCurrentMax(Math.ceil(val * 1.5));
+    }
   };
 
   const handleRangeCommit = () => {
@@ -50,9 +65,26 @@ export function SliderInput({
   const handleInputBlur = () => {
     let finalVal = localValue;
     if (finalVal < min) finalVal = min;
-    if (finalVal > max) finalVal = max;
+    if (finalVal > currentMax) {
+      setCurrentMax(Math.ceil(finalVal * 1.5));
+    }
     setLocalValue(finalVal);
     onChange(finalVal);
+  };
+
+  const handleIncrement = () => {
+    const newVal = localValue + step;
+    if (newVal > currentMax) {
+      setCurrentMax(Math.ceil(newVal * 1.5));
+    }
+    setLocalValue(newVal);
+    onChange(newVal);
+  };
+
+  const handleDecrement = () => {
+    const newVal = Math.max(min, localValue - step);
+    setLocalValue(newVal);
+    onChange(newVal);
   };
 
   return (
@@ -61,7 +93,15 @@ export function SliderInput({
         <label htmlFor={id} className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
           {label}
         </label>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleDecrement}
+            className="w-6 h-6 flex items-center justify-center rounded-md border transition-all text-xs font-bold select-none cursor-pointer"
+            style={{ borderColor: "var(--border-subtle)", background: "var(--bg-secondary)", color: "var(--text-secondary)" }}
+          >
+            -
+          </button>
           <input
             type="number"
             id={id}
@@ -76,10 +116,18 @@ export function SliderInput({
             }}
             className="input-field text-right !w-24 !py-1 text-sm number-display"
             min={min}
-            max={max}
+            max={currentMax}
             step={step}
           />
-          <span className="text-sm ml-1" style={{ color: "var(--text-muted)" }}>{unit}</span>
+          <button
+            type="button"
+            onClick={handleIncrement}
+            className="w-6 h-6 flex items-center justify-center rounded-md border transition-all text-xs font-bold select-none cursor-pointer"
+            style={{ borderColor: "var(--border-subtle)", background: "var(--bg-secondary)", color: "var(--text-secondary)" }}
+          >
+            +
+          </button>
+          <span className="text-sm ml-1 shrink-0 w-5" style={{ color: "var(--text-muted)" }}>{unit}</span>
         </div>
       </div>
       <input
@@ -89,14 +137,15 @@ export function SliderInput({
         onMouseUp={handleRangeCommit}
         onTouchEnd={handleRangeCommit}
         min={min}
-        max={max}
+        max={currentMax}
         step={step}
-        className="w-full"
+        className="w-full cursor-ew-resize"
       />
       {hint && <p className="text-[11px] mt-1.5 opacity-60 leading-relaxed" style={{ color: "var(--text-muted)" }}>{hint}</p>}
     </div>
   );
 }
+
 
 export function CompactInput({
   label,

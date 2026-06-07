@@ -243,3 +243,89 @@ input[type="range"]::-webkit-slider-thumb:hover {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
+
+/* 人生事件點選後的閃爍高亮動畫 */
+@keyframes blink {
+  0%, 100% {
+    border-color: rgba(236, 72, 153, 0.2);
+    box-shadow: none;
+    background-color: transparent;
+  }
+  50% {
+    border-color: #ec4899;
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
+    background-color: rgba(236, 72, 153, 0.1);
+  }
+}
+.highlight-blink {
+  animation: blink 0.8s ease-in-out 3;
+}
+
+/* 一鍵列印理財報告規劃書樣式 (@media print) */
+@media print {
+  /* 隱藏非報表區塊 */
+  header, footer, nav, button, .tab-button, .lg\:col-span-4, .btn-accent, .btn-secondary, input, select, .mt-6.pt-5.border-t {
+    display: none !important;
+  }
+
+  /* 強制網頁印出背景顏色與漸層 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0b0f1a !important;
+  }
+
+  /* 調小標題與字體，避免印出時太寬 */
+  h1 {
+    color: #0b0f1a !important;
+    font-size: 24px !important;
+    margin-bottom: 15px !important;
+  }
+
+  /* 將結果面板展開為滿版 */
+  .lg\:col-span-8 {
+    width: 100% !important;
+    grid-column: span 12 / span 12 !important;
+  }
+
+  .glass-card {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0b0f1a !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    margin-bottom: 20px !important;
+  }
+
+  .stat-card {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0b0f1a !important;
+  }
+
+  .stat-card p {
+    color: #475569 !important;
+  }
+
+  .stat-card .number-display {
+    color: #0f172a !important;
+  }
+
+  .recharts-cartesian-grid-horizontal line,
+  .recharts-cartesian-grid-vertical line {
+    stroke: #e2e8f0 !important;
+  }
+
+  .recharts-text {
+    fill: #475569 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+

@@ -37,6 +37,9 @@ import BasicTab from "@/components/simulator/BasicTab";
 import HousingTab from "@/components/simulator/HousingTab";
 import MonteCarloTab, { CRISIS_SCENARIOS } from "@/components/simulator/MonteCarloTab";
 import ScenarioManager from "@/components/simulator/ScenarioManager";
+import GoalPlanner from "@/components/simulator/GoalPlanner";
+
+
 
 const ETF_PRESETS = [
   { name: "VOO/SPY (美股大盤)", return: 10, vol: 15 },
@@ -279,6 +282,18 @@ function SimulatorContent() {
     setScenarios(getScenarios());
   };
 
+  const handleEventClick = useCallback((year: number, index: number) => {
+    const element = document.getElementById(`life-event-${year}-${index}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("highlight-blink");
+      setTimeout(() => {
+        element.classList.remove("highlight-blink");
+      }, 3000);
+    }
+  }, []);
+
+
   return (
     <>
       <Navbar />
@@ -403,6 +418,23 @@ function SimulatorContent() {
 
             {/* ===== Right Panel: Results ===== */}
             <div className="lg:col-span-8 space-y-6">
+              <div className="flex justify-between items-center no-print pb-1 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+                  📊 模擬計算結果
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer hover:bg-white/5 active:scale-95 no-print"
+                  style={{
+                    borderColor: "var(--border-subtle)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--accent-primary)",
+                  }}
+                >
+                  🖨️ 匯出理財報告 (PDF/列印)
+                </button>
+              </div>
 
               {/* === Life Path Panel (basic + mc only) === */}
               {(activeTab === "basic" || activeTab === "mc") && (
@@ -483,9 +515,19 @@ function SimulatorContent() {
                     </div>
                   )}
 
+                  <GoalPlanner
+                    currentAssets={basicParams.currentAssets}
+                    currentReturn={basicParams.annualReturn}
+                    currentInvestment={basicParams.monthlyInvestment}
+                  />
+
                   <div className="glass-card p-5">
                     <h3 className="font-semibold text-base mb-4" style={{ color: "var(--text-secondary)" }}>資產成長曲線</h3>
-                    <ProjectionChart data={projectionData} events={basicParams.isEventsEnabled ? basicParams.customEvents : []} />
+                    <ProjectionChart
+                      data={projectionData}
+                      events={basicParams.isEventsEnabled ? basicParams.customEvents : []}
+                      onEventClick={handleEventClick}
+                    />
                   </div>
                 </>
               ) : activeTab === "housing" ? (

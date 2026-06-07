@@ -371,3 +371,73 @@ export interface MCResult {
   }[];
 }
 
+/**
+ * 逆向計算：在特定預期報酬下，要達成目標資產，每月需要投資多少元
+ */
+export function calculateRequiredMonthlyInvestment(
+  targetAssets: number,
+  years: number,
+  annualReturn: number,
+  initialAssets: number
+): number {
+  if (years <= 0) return 0;
+  const n = years * 12;
+  const r = annualReturn / 100 / 12;
+  
+  if (r === 0) {
+    return Math.max(0, (targetAssets - initialAssets) / n);
+  }
+  
+  const compoundPV = initialAssets * Math.pow(1 + r, n);
+  if (compoundPV >= targetAssets) return 0; // 初始資產自己複利就夠了
+  
+  const numerator = (targetAssets - compoundPV) * r;
+  const denominator = Math.pow(1 + r, n) - 1;
+  return Math.round(numerator / denominator);
+}
+
+/**
+ * 逆向計算：在固定每月投資與現有資產下，要達成目標資產，需要的年化報酬率 (%)
+ * 透過二分搜尋法 (Binary Search) 逼近求解
+ */
+export function calculateRequiredReturn(
+  targetAssets: number,
+  years: number,
+  monthlyInvestment: number,
+  initialAssets: number
+): number | null {
+  if (years <= 0) return null;
+  const n = years * 12;
+  
+  // 檢查 0% 報酬率是否就夠了
+  if (initialAssets + monthlyInvestment * n >= targetAssets) {
+    return 0;
+  }
+  
+  let low = 0;
+  let high = 100; // 上限 100% 年化報酬率
+  let iterations = 0;
+  
+  while (low <= high && iterations < 50) {
+    const mid = (low + high) / 2;
+    const r = mid / 100 / 12;
+    
+    // 年金終值公式加上初始資產複利
+    const fv = initialAssets * Math.pow(1 + r, n) + monthlyInvestment * ((Math.pow(1 + r, n) - 1) / r);
+    
+    if (Math.abs(fv - targetAssets) < 100) { // 誤差小於 100 元即可
+      return Math.round(mid * 100) / 100;
+    }
+    
+    if (fv > targetAssets) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+    iterations++;
+  }
+  
+  return Math.round(low * 100) / 100;
+}
+
+
