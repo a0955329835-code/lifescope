@@ -392,6 +392,15 @@ input[type="range"]::-webkit-slider-thumb:hover {
     fill: #475569 !important;
   }
 
+  /* 強制 Recharts 圖表縮放以適應列印寬度，防止超出邊框 */
+  .recharts-responsive-container,
+  .recharts-wrapper,
+  .recharts-wrapper svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
   .no-print {
     display: none !important;
   }
