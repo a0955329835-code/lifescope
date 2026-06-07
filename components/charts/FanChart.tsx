@@ -44,7 +44,7 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={formattedData}
-            margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: 20, bottom: 15 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
             <XAxis
@@ -123,7 +123,7 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
           width={680}
           height={350}
           data={formattedData}
-          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: 20, bottom: 15 }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
           <XAxis

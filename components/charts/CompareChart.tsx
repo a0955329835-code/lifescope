@@ -32,7 +32,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={formattedData}
-            margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -75,7 +75,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
                 label={{ position: 'insideTopLeft', value: `✨ 第 ${loanYears} 年房貸繳清`, fill: 'var(--text-muted)', fontSize: 12 }} 
               />
             )}
-            <Legend wrapperStyle={{ paddingTop: "20px" }} />
+            <Legend wrapperStyle={{ paddingTop: "10px" }} />
             <Line
               type="monotone"
               dataKey="displayBuyNetWorth"
@@ -104,7 +104,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
           width={680}
           height={300}
           data={formattedData}
-          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
         >
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
@@ -129,7 +129,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
               label={{ position: 'insideTopLeft', value: `✨ 第 ${loanYears} 年房貸繳清`, fill: 'var(--text-muted)', fontSize: 12 }} 
             />
           )}
-          <Legend wrapperStyle={{ paddingTop: "20px" }} />
+          <Legend wrapperStyle={{ paddingTop: "10px" }} />
           <Line
             type="monotone"
             dataKey="displayBuyNetWorth"

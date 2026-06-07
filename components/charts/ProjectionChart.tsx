@@ -46,7 +46,7 @@ export default function ProjectionChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={formattedData}
-            margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
           >
             <defs>
               <linearGradient id="colorAssets" x1="0" y1="0" x2="0" y2="1">
@@ -102,7 +102,7 @@ export default function ProjectionChart({
                 return [value, name];
               }}
             />
-            <Legend wrapperStyle={{ paddingTop: "20px" }} />
+            <Legend wrapperStyle={{ paddingTop: "10px" }} />
             {formattedData.some((d) => d.displayLoan > 0) && (
               <Line
                 type="monotone"
@@ -169,7 +169,7 @@ export default function ProjectionChart({
           width={680}
           height={300}
           data={formattedData}
-          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
         >
           <defs>
             <linearGradient id="colorAssetsPrint" x1="0" y1="0" x2="0" y2="1">
@@ -197,7 +197,7 @@ export default function ProjectionChart({
             tickFormatter={(val: number) => `${val} 萬`}
             dx={-10}
           />
-          <Legend wrapperStyle={{ paddingTop: "20px" }} />
+          <Legend wrapperStyle={{ paddingTop: "10px" }} />
           {formattedData.some((d) => d.displayLoan > 0) && (
             <Line
               type="monotone"
