@@ -81,3 +81,88 @@ Numpy 是 C++ 底層寫的，不能直接把 Windows 下載的 Numpy 上傳到 A
 回到你的 Lambda 介面或者 API Gateway 看，你會得到一串類似 `https://xxxxxxx.execute-api.ap-northeast-1.amazonaws.com/default/lifescope-monte-carlo` 的 API endpoint URL。
 > 請把這串 URL 填回前端的 `.env.local` 環境變數裡（`NEXT_PUBLIC_MC_API_URL`）！這樣前端就可以正式開始呼叫引擎做壓力測試了。
 
+---
+
+## 📊 API 接口與資料格式說明 (API Specification)
+
+後端蒙地卡羅運算引擎提供了一個 HTTP POST 接口，供前端傳送推演參數並回傳統計結果。
+
+### 1. 請求 URL (API Endpoint)
+* **Method**: `POST`
+* **Content-Type**: `application/json`
+
+### 2. 請求參數 (Request Payload JSON)
+
+| 欄位名稱 | 型態 | 預設值 | 說明 | 限制/範圍 |
+| :--- | :--- | :--- | :--- | :--- |
+| `initialAssets` | float | `10000000` | 初始淨資產 (元) | `[0, 10,000,000,000]` |
+| `monthlyContribution` | float | `10000` | 每月持續投入金額 (元) | `[0, 10,000,000]` |
+| `monthlyWithdrawal` | float | `50000` | 每月提領金額 (元) | `[0, 10,000,000]` |
+| `years` | int | `40` | 模擬年數 | `[1, 100]` |
+| `expectedReturn` | float | `7.0` | 預期年化報酬率 (%) | `[-50.0, 100.0]` |
+| `volatility` | float | `15.0` | 預估市場年化波動率 (%) | `[0.0, 100.0]` |
+| `inflationMean` | float | `2.0` | 預估年化通膨率 (%) | `[0.0, 50.0]` |
+| `salaryGrowthRate` | float | `0.0` | 每年調薪幅度 (%) | `[0.0, 20.0]` |
+| `leverageAmount` | float | `0.0` | 借貸本金 (元) | `[0.0, 無上限]` |
+| `leverageRate` | float | `0.0` | 貸款年化利率 (%) | `[0.0, 100.0]` |
+| `leverageYears` | int | `0` | 貸款年限 | `[0, 100]` |
+| `leverageRecurYears` | int | `0` | 自動定期續借頻率 (年)，0 為不續借 | `[0, 100]` |
+| `jumpProbability` | float | `0.0` | 隨機跳躍擴散年崩盤機率 (%) | `[0.0, 100.0]` |
+| `jumpImpact` | float | `20.0` | 隨機跳躍擴散崩盤跌幅 (%) | `[0.0, 100.0]` |
+| `isDynamic` | bool | `false` | 是否啟用動態提領機制 | `true` 或 `false` |
+| `dynamicRatio` | float | `20.0` | 動態縮減提領比例 (%) | `[0.0, 100.0]` |
+| `lifeStages` | array | `[]` | 人生不同階段設定列表 (上限 10 筆) | 內含 `{ endYear, familySize }` |
+| `blackSwanEvents` | array | `[]` | 歷史黑天鵝重大崩盤年份設定 (上限 20 筆) | 內含 `{ year, drop }` |
+
+*注：所有輸入數值皆會在 Lambda 端進行 strict clamp 範圍校驗以確保伺服器穩定。*
+
+#### `lifeStages` 格式範例：
+```json
+[
+  { "endYear": 10, "familySize": 1 },
+  { "endYear": 30, "familySize": 3 },
+  { "endYear": 50, "familySize": 2 }
+]
+```
+
+#### `blackSwanEvents` 格式範例：
+```json
+[
+  { "year": 5, "drop": 40 },
+  { "year": 13, "drop": 50 }
+]
+```
+
+---
+
+### 3. 回傳參數 (Response JSON)
+
+* **HTTP Status**: `200 OK`
+
+```json
+{
+  "successRate": 98.5,           // 1,000 次模擬中，未破產（投資帳戶 > 0）的機率百分比
+  "ruinProbability": 1.5,        // 破產率百分比 (100 - successRate)
+  "medianEndingWealth": 54203100, // 第 N 年淨資產的中位數 (P50)
+  "percentilePaths": [           // 每年各百分位數軌跡 (用於扇形信心圖)
+    {
+      "year": 0,
+      "p90": 500000,
+      "p75": 500000,
+      "p50": 500000,
+      "p25": 500000,
+      "p10": 500000
+    },
+    ...
+    {
+      "year": 30,
+      "p90": 120450000,
+      "p75": 84210000,
+      "p50": 54203100,
+      "p25": 28450000,
+      "p10": 9800000
+    }
+  ]
+}
+```
+
