@@ -432,11 +432,6 @@ function SimulatorContent() {
 
             {/* ===== Right Panel: Results ===== */}
             <div className="lg:col-span-8 space-y-6">
-              <div className="flex justify-between items-center pb-1 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
-                  📊 模擬計算結果
-                </h2>
-              </div>
 
               {/* === Life Path Panel (basic + mc only) === */}
               {(activeTab === "basic" || activeTab === "mc") && (
