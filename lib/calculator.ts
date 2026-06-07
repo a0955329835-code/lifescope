@@ -1,6 +1,15 @@
 // LifeScope — 複利試算核心邏輯
 // 所有基礎運算放前端（公開數學公式，不怕抄）
 
+export interface CustomEvent {
+  year: number;
+  name: string;
+  amount: number;
+  type?: "one-time" | "interruption";
+  duration?: number;
+  isInsurable?: boolean;
+}
+
 export interface BasicParams {
   currentAssets: number;      // 現有資產 (TWD)
   monthlyIncome: number;      // 月收入
@@ -15,7 +24,10 @@ export interface BasicParams {
   leverageYears?: number;     // 借貸年限
   leverageRecurYears?: number; // 自動續借頻率 (年, 0 代表不續借)
   isEventsEnabled?: boolean;   // 是否開啟人生重大事件
-  customEvents?: { year: number; name: string; amount: number }[]; // 人生重大事件
+  customEvents?: CustomEvent[]; // 人生重大事件
+  frictionRate?: number;       // 交易與稅務摩擦損耗年利率 (%)
+  isInsuranceEnabled?: boolean; // 是否配置風險防禦保險
+  insurancePremium?: number;   // 每月保費 (元)
 }
 
 export interface HousingParams {
@@ -30,6 +42,7 @@ export interface HousingParams {
   maintenanceRate: number;    // 房屋年維護成本 (% of house price)
   houseAppreciationRate: number; // 房價年漲幅 (%)
   yearsToCompare: number;     // 比較年數
+  graceYears?: number;         // 房貸寬限期 (年)
 }
 
 export interface YearlyData {
@@ -117,9 +130,14 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     leverageRecurYears = 0,
     isEventsEnabled = false,
     customEvents = [],
+    frictionRate = 0,
+    isInsuranceEnabled = false,
+    insurancePremium = 0,
   } = params;
 
-  const monthlyRate = annualReturn / 100 / 12;
+  // 投資年化報酬率扣除摩擦損耗，最少為 0%
+  const effectiveReturn = Math.max(0, annualReturn - frictionRate);
+  const monthlyRate = effectiveReturn / 100 / 12;
   const data: YearlyData[] = [];
   
   // 借貸邏輯：期初資產增加
@@ -159,11 +177,14 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     const isPayingLoan = leverageRecurYears > 0 || year <= leverageYears;
     const loanDeduction = (leverageAmount > 0 && isPayingLoan) ? monthlyLoanPayment : 0;
 
+    // 保費作為必需性現金支出，按月扣除
+    const monthlyInsuranceDeduction = isInsuranceEnabled ? insurancePremium : 0;
+
     for (let month = 0; month < 12; month++) {
-      // 每月資產增長 = 先計算本月投資報酬，再加入(或扣除)現金流
-      assets = assets * (1 + monthlyRate) + adjustedInvestment - loanDeduction;
+      // 每月資產增長 = 先計算本月投資報酬，再加入(或扣除)現金流（含保費）
+      assets = assets * (1 + monthlyRate) + adjustedInvestment - loanDeduction - monthlyInsuranceDeduction;
       
-      // 更新剩餘貸款本金 (精確扣除每月已還本金)
+      // 更新剩餘貸款本金
       if (isPayingLoan && remainingLoan > 0) {
         const monthlyLoanInterest = remainingLoan * (leverageRate / 100 / 12);
         const principalPaid = monthlyLoanPayment - monthlyLoanInterest;
@@ -176,10 +197,31 @@ export function calculateProjection(params: BasicParams, lifeStages?: LifeStage[
     // 計算當年發生的事件
     let eventTotal = 0;
     if (isEventsEnabled) {
-      const currentYearEvents = customEvents.filter(e => e.year === year);
-      eventTotal = currentYearEvents.reduce((sum, e) => sum + e.amount, 0);
+      // 篩選出在當年發生的所有事件：
+      // 1. 單次事件：year === 當年
+      // 2. 收入中斷型事件：年份落在 [year, year + duration - 1] 之間
+      const activeEvents = customEvents.filter(e => {
+        if (!e.type || e.type === "one-time") {
+          return e.year === year;
+        } else if (e.type === "interruption") {
+          const duration = e.duration || 1;
+          return year >= e.year && year < e.year + duration;
+        }
+        return false;
+      });
 
-      // 一次性加入/扣除資產與投入本金 (此處假設事件的現金流為額外的本金加碼/抽回)
+      for (const ev of activeEvents) {
+        let impact = ev.amount;
+
+        // 若屬於收入中斷型事件，且使用者啟用了保險防護罩，且該事件為可保險項目：
+        if (ev.type === "interruption" && isInsuranceEnabled && ev.isInsurable) {
+          // 保險理賠覆蓋：淨損失歸零
+          impact = 0;
+        }
+        eventTotal += impact;
+      }
+
+      // 一次性加入/扣除資產與投入本金
       assets += eventTotal;
       totalInvested += eventTotal;
     }
@@ -242,11 +284,19 @@ export function calculateHousingCompare(params: HousingParams): HousingCompareDa
     maintenanceRate,
     houseAppreciationRate,
     yearsToCompare,
+    graceYears = 0,
   } = params;
 
   const downPayment = housePrice * (downPaymentPercent / 100);
   const loanAmount = housePrice - downPayment;
-  const monthlyMortgage = calculateMonthlyMortgage(loanAmount, loanRate, loanYears);
+  
+  // 計算寬限期後的賸餘還款年限與每月還款額 (賸餘年限等額本息攤還)
+  const remainingYearsAfterGrace = Math.max(1, loanYears - graceYears);
+  const monthlyMortgageAfterGrace = calculateMonthlyMortgage(loanAmount, loanRate, remainingYearsAfterGrace);
+  
+  // 寬限期內每月僅付利息
+  const monthlyInterestOnlyPayment = loanAmount * (loanRate / 100 / 12);
+  
   const monthlyInvestRate = investReturn / 100 / 12;
 
   const data: HousingCompareData[] = [];
@@ -275,7 +325,14 @@ export function calculateHousingCompare(params: HousingParams): HousingCompareDa
 
     for (let month = 0; month < 12; month++) {
       // 核心公平對比邏輯：確保兩者每月拿出口袋的現金流(支出+存款)完全一樣
-      const buyMonthlyCost = (year <= loanYears ? monthlyMortgage : 0) + (yearlyMaintenance / 12);
+      let buyMonthlyMortgage = 0;
+      if (year <= graceYears) {
+        buyMonthlyMortgage = monthlyInterestOnlyPayment; // 寬限期內付息
+      } else if (year <= loanYears) {
+        buyMonthlyMortgage = monthlyMortgageAfterGrace; // 寬限期外攤還本息
+      }
+      
+      const buyMonthlyCost = buyMonthlyMortgage + (yearlyMaintenance / 12);
       const rentMonthlyCost = currentRent;
       
       const monthlyBudget = Math.max(buyMonthlyCost, rentMonthlyCost);
@@ -293,9 +350,15 @@ export function calculateHousingCompare(params: HousingParams): HousingCompareDa
     currentRent = currentRent * (1 + rentIncreaseRate / 100);
     currentHouseValue = currentHouseValue * (1 + houseAppreciationRate / 100);
 
-    const remainingLoan = year < loanYears
-      ? remainingLoanBalance(loanAmount, loanRate, loanYears, year)
-      : 0;
+    // 寬限期內本金不減少，否則正常還款
+    let remainingLoan = 0;
+    if (year <= graceYears) {
+      remainingLoan = loanAmount;
+    } else if (year < loanYears) {
+      remainingLoan = remainingLoanBalance(loanAmount, loanRate, remainingYearsAfterGrace, year - graceYears);
+    } else {
+      remainingLoan = 0;
+    }
 
     const buyNetWorth = currentHouseValue + buyExtraInvestAssets - remainingLoan;
     const rentNetWorth = rentInvestAssets;

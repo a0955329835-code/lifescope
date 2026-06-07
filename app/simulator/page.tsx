@@ -94,6 +94,9 @@ function SimulatorContent() {
     leverageRecurYears: 0,
     isEventsEnabled: false,
     customEvents: [],
+    frictionRate: 0.3,
+    isInsuranceEnabled: false,
+    insurancePremium: 1500,
   });
 
   const [isLeverageEnabled, setIsLeverageEnabled] = useState(false);
@@ -118,6 +121,7 @@ function SimulatorContent() {
     maintenanceRate: 1,
     houseAppreciationRate: 2,
     yearsToCompare: 50,
+    graceYears: 0,
   });
 
   useEffect(() => {
@@ -256,9 +260,17 @@ function SimulatorContent() {
   };
 
   const handleLoad = (scenario: Scenario) => {
-    setBasicParams(scenario.params);
+    setBasicParams({
+      frictionRate: 0.3,
+      isInsuranceEnabled: false,
+      insurancePremium: 1500,
+      ...scenario.params,
+    });
     if (scenario.housingParams) {
-      setHousingParams(scenario.housingParams);
+      setHousingParams({
+        graceYears: 0,
+        ...scenario.housingParams,
+      });
     }
     if (scenario.mcParams) {
       setMcParams((prev) => ({

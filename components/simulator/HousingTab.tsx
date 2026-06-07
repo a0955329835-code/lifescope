@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { HousingParams } from "@/lib/calculator";
+import { HousingParams, calculateMonthlyMortgage } from "@/lib/calculator";
 import {
   SectionHeader,
   SliderInput,
@@ -21,6 +21,12 @@ export default function HousingTab({
   updateHousing,
   computedMortgage,
 }: HousingTabProps) {
+  const { housePrice, downPaymentPercent, loanRate, loanYears, graceYears = 0 } = housingParams;
+  const loanAmount = housePrice * (1 - downPaymentPercent / 100);
+  const monthlyInterestOnly = Math.round(loanAmount * (loanRate / 100 / 12));
+  const remainingYears = Math.max(1, loanYears - graceYears);
+  const monthlyMortgageAfterGrace = Math.round(calculateMonthlyMortgage(loanAmount, loanRate, remainingYears));
+
   return (
     <>
       <SectionHeader
@@ -104,13 +110,42 @@ export default function HousingTab({
         step={5}
         unit="年"
       />
+      <SliderInput
+        id="graceYears"
+        label="房貸寬限期"
+        value={graceYears}
+        onChange={(v) => updateHousing("graceYears", v)}
+        min={0}
+        max={Math.min(10, housingParams.loanYears - 5)}
+        step={1}
+        unit="年"
+        hint="寬限期內只還利息，不還本金。期滿後由賸餘年限等額本息攤還。"
+      />
 
-      <InfoBox colorHex="#8b5cf6" dashed>
-        <p className="text-sm font-medium flex justify-between items-center" style={{ color: "var(--accent-secondary)" }}>
-          <span>💡 每月房貸本息攤還試算</span>
-          <span className="text-base font-bold">{formatNumber(computedMortgage)} 元</span>
-        </p>
-      </InfoBox>
+      {graceYears > 0 ? (
+        <InfoBox colorHex="#8b5cf6" dashed>
+          <div className="text-xs space-y-1.5" style={{ color: "var(--text-secondary)" }}>
+            <p className="font-semibold flex justify-between items-center text-violet-400">
+              <span>💡 房貸寬限期試算</span>
+            </p>
+            <p className="flex justify-between items-center">
+              <span>第 1 ~ {graceYears} 年每月付息：</span>
+              <span className="font-bold text-sm text-slate-100">{formatNumber(monthlyInterestOnly)} 元</span>
+            </p>
+            <p className="flex justify-between items-center">
+              <span>第 {graceYears + 1} 年起每月本息攤還：</span>
+              <span className="font-bold text-sm text-slate-100">{formatNumber(monthlyMortgageAfterGrace)} 元</span>
+            </p>
+          </div>
+        </InfoBox>
+      ) : (
+        <InfoBox colorHex="#8b5cf6" dashed>
+          <p className="text-sm font-medium flex justify-between items-center" style={{ color: "var(--accent-secondary)" }}>
+            <span>💡 每月房貸本息攤還試算</span>
+            <span className="text-base font-bold">{formatNumber(computedMortgage)} 元</span>
+          </p>
+        </InfoBox>
+      )}
 
       <SliderInput
         id="houseAppreciationRate"
