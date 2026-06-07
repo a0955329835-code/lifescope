@@ -75,7 +75,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
                 label={{ position: 'insideTopLeft', value: `✨ 第 ${loanYears} 年房貸繳清`, fill: 'var(--text-muted)', fontSize: 12 }} 
               />
             )}
-            <Legend wrapperStyle={{ paddingTop: "10px" }} />
+            <Legend verticalAlign="bottom" height={36} />
             <Line
               type="monotone"
               dataKey="displayBuyNetWorth"
@@ -129,7 +129,7 @@ export default function CompareChart({ data, loanYears, yearsToCompare }: { data
               label={{ position: 'insideTopLeft', value: `✨ 第 ${loanYears} 年房貸繳清`, fill: 'var(--text-muted)', fontSize: 12 }} 
             />
           )}
-          <Legend wrapperStyle={{ paddingTop: "10px" }} />
+          <Legend verticalAlign="bottom" height={36} />
           <Line
             type="monotone"
             dataKey="displayBuyNetWorth"

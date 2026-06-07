@@ -102,7 +102,7 @@ export default function ProjectionChart({
                 return [value, name];
               }}
             />
-            <Legend wrapperStyle={{ paddingTop: "10px" }} />
+            <Legend verticalAlign="bottom" height={36} />
             {formattedData.some((d) => d.displayLoan > 0) && (
               <Line
                 type="monotone"
@@ -197,7 +197,7 @@ export default function ProjectionChart({
             tickFormatter={(val: number) => `${val} 萬`}
             dx={-10}
           />
-          <Legend wrapperStyle={{ paddingTop: "10px" }} />
+          <Legend verticalAlign="bottom" height={36} />
           {formattedData.some((d) => d.displayLoan > 0) && (
             <Line
               type="monotone"
