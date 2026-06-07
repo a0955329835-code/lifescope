@@ -451,7 +451,7 @@ function SimulatorContent() {
                             type="number"
                             value={stage.endYear}
                             onChange={(e) => { const v = [...lifeStages]; v[i] = {...v[i], endYear: Math.max(1, Math.min(50, Number(e.target.value)))}; setLifeStages(v); }}
-                            className="input-field !w-20 !py-1 text-sm text-center"
+                            className="input-field !w-20 !py-1 !px-2 text-sm text-center"
                             min={1} max={50}
                           />
                           <span className="text-xs shrink-0" style={{ color: "var(--text-muted)" }}>年</span>

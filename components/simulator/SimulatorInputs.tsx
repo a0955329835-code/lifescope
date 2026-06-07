@@ -114,7 +114,7 @@ export function SliderInput({
                 (e.target as HTMLInputElement).blur();
               }
             }}
-            className="input-field text-right !w-24 !py-1 text-sm number-display"
+            className="input-field text-right !w-28 !py-1 !px-2 text-sm number-display"
             min={min}
             max={currentMax}
             step={step}
@@ -196,7 +196,7 @@ export function CompactInput({
           step={step}
           min={min}
           max={max}
-          className="input-field !py-1.5 text-sm number-display flex-1 text-right"
+          className="input-field !py-1.5 !px-2 text-sm number-display flex-1 text-right"
         />
         <span className="text-xs shrink-0 w-4" style={{ color: "var(--text-muted)" }}>{unit}</span>
       </div>
