@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   XAxis,
   YAxis,
@@ -24,6 +24,20 @@ export interface PercentileData {
 }
 
 export default function FanChart({ data }: { data: PercentileData[] }) {
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleBeforePrint = () => setIsPrinting(true);
+    const handleAfterPrint = () => setIsPrinting(false);
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, []);
+
   const formattedData = useMemo(() => {
     return data.map((d) => ({
       year: d.year,
@@ -36,6 +50,69 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
   }, [data]);
 
   if (!data || data.length === 0) return null;
+
+  if (isPrinting) {
+    return (
+      <div className="w-full flex justify-center" style={{ height: "350px" }}>
+        <ComposedChart
+          width={680}
+          height={350}
+          data={formattedData}
+          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
+          <XAxis
+            dataKey="year"
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(val) => `第 ${val} 年`}
+            dy={10}
+            minTickGap={30}
+          />
+          <YAxis
+            width={80}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(val) => `${val} 萬`}
+            dx={-10}
+          />
+          
+          <ReferenceLine y={0} stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: '破產警戒線', fill: '#ef4444', fontSize: 12 }} />
+
+          <Area
+            type="monotone"
+            dataKey="range90_10"
+            name="range90_10"
+            stroke="none"
+            fill="var(--accent-primary)"
+            fillOpacity={0.15}
+            isAnimationActive={false}
+          />
+
+          <Area
+            type="monotone"
+            dataKey="range75_25"
+            name="range75_25"
+            stroke="none"
+            fill="var(--accent-primary)"
+            fillOpacity={0.3}
+            isAnimationActive={false}
+          />
+
+          <Line
+            type="monotone"
+            dataKey="median"
+            name="median"
+            stroke="var(--accent-primary)"
+            strokeWidth={3}
+            dot={false}
+            activeDot={{ r: 6 }}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[350px] w-full">

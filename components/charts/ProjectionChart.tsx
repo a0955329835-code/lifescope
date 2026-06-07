@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   XAxis,
   YAxis,
@@ -25,6 +25,20 @@ export default function ProjectionChart({
   events?: { year: number; name: string; amount: number }[];
   onEventClick?: (year: number, index: number) => void;
 }) {
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleBeforePrint = () => setIsPrinting(true);
+    const handleAfterPrint = () => setIsPrinting(false);
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, []);
+
   const formattedData = useMemo(() => {
 
     return data.map((d) => ({
@@ -39,6 +53,88 @@ export default function ProjectionChart({
   }, [data]);
 
   if (!data || data.length === 0) return null;
+
+  if (isPrinting) {
+    return (
+      <div className="w-full flex justify-center" style={{ height: "300px" }}>
+        <ComposedChart
+          width={680}
+          height={300}
+          data={formattedData}
+          margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="colorAssetsPrint" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorInvestedPrint" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--text-muted)" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="var(--text-muted)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="year"
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(val: number) => `第 ${val} 年`}
+            dy={10}
+            minTickGap={30}
+          />
+          <YAxis
+            width={75}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(val: number) => `${val} 萬`}
+            dx={-10}
+          />
+          <Legend wrapperStyle={{ paddingTop: "20px" }} />
+          {formattedData.some((d) => d.displayLoan > 0) && (
+            <Line
+              type="monotone"
+              dataKey="displayPortfolio"
+              name="投資帳戶總市值"
+              stroke="#3b82f6"
+              strokeWidth={3}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+          <Line
+            type="monotone"
+            dataKey="displayRealAssets"
+            name={formattedData.some((d) => d.displayLoan > 0) ? "真實淨資產" : "實質資產 (通膨後)"}
+            stroke="#f59e0b"
+            strokeWidth={3}
+            strokeDasharray={formattedData.some((d) => d.displayLoan > 0) ? "5 5" : undefined}
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Area
+            type="monotone"
+            dataKey="displayInvested"
+            name="投入本金"
+            stroke="var(--text-muted)"
+            strokeWidth={2}
+            fillOpacity={1}
+            fill="url(#colorInvestedPrint)"
+            isAnimationActive={false}
+          />
+          <Area
+            type="monotone"
+            dataKey="displayAssets"
+            name="名目總資產"
+            stroke="var(--accent-primary)"
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorAssetsPrint)"
+            isAnimationActive={false}
+          />
+        </ComposedChart>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">
