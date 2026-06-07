@@ -432,22 +432,10 @@ function SimulatorContent() {
 
             {/* ===== Right Panel: Results ===== */}
             <div className="lg:col-span-8 space-y-6">
-              <div className="flex justify-between items-center no-print pb-1 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+              <div className="flex justify-between items-center pb-1 border-b" style={{ borderColor: "var(--border-subtle)" }}>
                 <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
                   📊 模擬計算結果
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="px-4 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer hover:bg-white/5 active:scale-95 no-print"
-                  style={{
-                    borderColor: "var(--border-subtle)",
-                    background: "var(--bg-secondary)",
-                    color: "var(--accent-primary)",
-                  }}
-                >
-                  🖨️ 匯出理財報告 (PDF/列印)
-                </button>
               </div>
 
               {/* === Life Path Panel (basic + mc only) === */}

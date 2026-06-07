@@ -40,143 +40,18 @@ export default function ProjectionChart({
   if (!data || data.length === 0) return null;
 
   return (
-    <>
-      {/* 螢幕顯示版本 - 使用 ResponsiveContainer */}
-      <div className="h-[300px] w-full no-print">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={formattedData}
-            margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
-          >
-            <defs>
-              <linearGradient id="colorAssets" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="colorInvested" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--text-muted)" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="var(--text-muted)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="year"
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(val: number) => `第 ${val} 年`}
-              dy={10}
-              minTickGap={30}
-            />
-            <YAxis
-              width={75}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(val: number) => `${val} 萬`}
-              dx={-10}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(26, 35, 50, 0.9)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "12px",
-                boxShadow: "var(--shadow-card)",
-                color: "var(--text-primary)",
-              }}
-              itemStyle={{ color: "var(--text-primary)" }}
-              labelFormatter={(label) => {
-                const yearEvents = events.filter(e => e.year === label);
-                if (yearEvents.length > 0) {
-                  const eventText = yearEvents.map(e => `${e.name} (${e.amount >= 0 ? '+' : ''}${formatTWD(e.amount)})`).join(", ");
-                  return `第 ${label} 年 — 🌟 ${eventText}`;
-                }
-                return `第 ${label} 年`;
-              }}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(value: any, name: any) => {
-                if (name === "displayPortfolio") return [formatTWD(Number(value) * 10000), "投資帳戶總市值 (含借款)"];
-                if (name === "displayRealAssets") return [formatTWD(Number(value) * 10000), "真實淨資產 (扣除借款/通膨)"];
-                if (name === "displayInvested") return [formatTWD(Number(value) * 10000), "累計投入本金"];
-                if (name === "displayLoan") return [formatTWD(Number(value) * 10000), "尚未還清貸款"];
-                if (name === "eventImpact") return [formatTWD(Number(value)), "🌟 該年事件影響"];
-                return [value, name];
-              }}
-            />
-            <Legend verticalAlign="bottom" height={36} />
-            {formattedData.some((d) => d.displayLoan > 0) && (
-              <Line
-                type="monotone"
-                dataKey="displayPortfolio"
-                name="投資帳戶總市值"
-                stroke="#3b82f6"
-                strokeWidth={3}
-                dot={false}
-              />
-            )}
-            <Line
-              type="monotone"
-              dataKey="displayRealAssets"
-              name={formattedData.some((d) => d.displayLoan > 0) ? "真實淨資產" : "實質資產 (通膨後)"}
-              stroke="#f59e0b"
-              strokeWidth={3}
-              strokeDasharray={formattedData.some((d) => d.displayLoan > 0) ? "5 5" : undefined}
-              dot={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="displayInvested"
-              name="投入本金"
-              stroke="var(--text-muted)"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorInvested)"
-            />
-            <Area
-              type="monotone"
-              dataKey="displayAssets"
-              name="名目總資產"
-              stroke="var(--accent-primary)"
-              strokeWidth={3}
-              fillOpacity={1}
-              fill="url(#colorAssets)"
-            />
-            {events.map((ev, i) => {
-              const dataPoint = formattedData.find((d) => d.year === ev.year);
-              if (!dataPoint) return null;
-              return (
-                <ReferenceDot
-                  key={i}
-                  x={ev.year}
-                  y={dataPoint.displayRealAssets}
-                  r={6}
-                  fill="var(--bg-primary)"
-                  stroke="var(--accent-primary)"
-                  strokeWidth={2}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => onEventClick?.(ev.year, i)}
-                >
-                  <Label value={`🌟 ${ev.name}`} position="top" fill="var(--text-primary)" fontSize={12} offset={10} />
-                </ReferenceDot>
-              );
-            })}
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* 列印專用版本 - 固定寬高，停用動畫，無 ResponsiveContainer */}
-      <div className="only-print justify-center w-full" style={{ height: "300px" }}>
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
-          width={680}
-          height={300}
           data={formattedData}
           margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
         >
           <defs>
-            <linearGradient id="colorAssetsPrint" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorAssets" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="var(--accent-primary)" stopOpacity={0.3} />
               <stop offset="95%" stopColor="var(--accent-primary)" stopOpacity={0} />
             </linearGradient>
-            <linearGradient id="colorInvestedPrint" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorInvested" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="var(--text-muted)" stopOpacity={0.2} />
               <stop offset="95%" stopColor="var(--text-muted)" stopOpacity={0} />
             </linearGradient>
@@ -197,6 +72,34 @@ export default function ProjectionChart({
             tickFormatter={(val: number) => `${val} 萬`}
             dx={-10}
           />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "rgba(26, 35, 50, 0.9)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "12px",
+              boxShadow: "var(--shadow-card)",
+              color: "var(--text-primary)",
+            }}
+            itemStyle={{ color: "var(--text-primary)" }}
+            labelFormatter={(label) => {
+              const yearEvents = events.filter(e => e.year === label);
+              if (yearEvents.length > 0) {
+                const eventText = yearEvents.map(e => `${e.name} (${e.amount >= 0 ? '+' : ''}${formatTWD(e.amount)})`).join(", ");
+                return `第 ${label} 年 — 🌟 ${eventText}`;
+              }
+              return `第 ${label} 年`;
+            }}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(value: any, name: any) => {
+              if (name === "displayPortfolio") return [formatTWD(Number(value) * 10000), "投資帳戶總市值 (含借款)"];
+              if (name === "displayRealAssets") return [formatTWD(Number(value) * 10000), "真實淨資產 (扣除借款/通膨)"];
+              if (name === "displayInvested") return [formatTWD(Number(value) * 10000), "累計投入本金"];
+              if (name === "displayLoan") return [formatTWD(Number(value) * 10000), "尚未還清貸款"];
+              if (name === "eventImpact") return [formatTWD(Number(value)), "🌟 該年事件影響"];
+              return [value, name];
+            }}
+          />
           <Legend verticalAlign="bottom" height={36} />
           {formattedData.some((d) => d.displayLoan > 0) && (
             <Line
@@ -206,7 +109,6 @@ export default function ProjectionChart({
               stroke="#3b82f6"
               strokeWidth={3}
               dot={false}
-              isAnimationActive={false}
             />
           )}
           <Line
@@ -217,7 +119,6 @@ export default function ProjectionChart({
             strokeWidth={3}
             strokeDasharray={formattedData.some((d) => d.displayLoan > 0) ? "5 5" : undefined}
             dot={false}
-            isAnimationActive={false}
           />
           <Area
             type="monotone"
@@ -226,8 +127,7 @@ export default function ProjectionChart({
             stroke="var(--text-muted)"
             strokeWidth={2}
             fillOpacity={1}
-            fill="url(#colorInvestedPrint)"
-            isAnimationActive={false}
+            fill="url(#colorInvested)"
           />
           <Area
             type="monotone"
@@ -236,11 +136,29 @@ export default function ProjectionChart({
             stroke="var(--accent-primary)"
             strokeWidth={3}
             fillOpacity={1}
-            fill="url(#colorAssetsPrint)"
-            isAnimationActive={false}
+            fill="url(#colorAssets)"
           />
+          {events.map((ev, i) => {
+            const dataPoint = formattedData.find((d) => d.year === ev.year);
+            if (!dataPoint) return null;
+            return (
+              <ReferenceDot
+                key={i}
+                x={ev.year}
+                y={dataPoint.displayRealAssets}
+                r={6}
+                fill="var(--bg-primary)"
+                stroke="var(--accent-primary)"
+                strokeWidth={2}
+                style={{ cursor: "pointer" }}
+                onClick={() => onEventClick?.(ev.year, i)}
+              >
+                <Label value={`🌟 ${ev.name}`} position="top" fill="var(--text-primary)" fontSize={12} offset={10} />
+              </ReferenceDot>
+            );
+          })}
         </ComposedChart>
-      </div>
-    </>
+      </ResponsiveContainer>
+    </div>
   );
 }

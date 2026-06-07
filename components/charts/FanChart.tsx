@@ -38,90 +38,9 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
   if (!data || data.length === 0) return null;
 
   return (
-    <>
-      {/* 螢幕顯示版本 - 使用 ResponsiveContainer */}
-      <div className="h-[350px] w-full no-print">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={formattedData}
-            margin={{ top: 10, right: 10, left: 20, bottom: 15 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.3} />
-            <XAxis
-              dataKey="year"
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(val) => `第 ${val} 年`}
-              dy={10}
-              minTickGap={30}
-            />
-            <YAxis
-              width={80}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(val) => `${val} 萬`}
-              dx={-10}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "rgba(26, 35, 50, 0.95)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "12px",
-                boxShadow: "var(--shadow-card)",
-                color: "var(--text-primary)",
-              }}
-              labelFormatter={(label) => `📉 退場第 ${label} 年`}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(value: any, name: any) => {
-                if (name === "median") return [formatTWD(Number(value) * 10000), "資產中位數 (P50)"];
-                if (name === "range75_25") return [`${formatTWD(value[0] * 10000)} ~ ${formatTWD(value[1] * 10000)}`, "大概率落點區 (P25 - P75)"];
-                if (name === "range90_10") return [`${formatTWD(value[0] * 10000)} ~ ${formatTWD(value[1] * 10000)}`, "極端狀況區 (P10 - P90)"];
-                return [value, name];
-              }}
-            />
-            
-            <ReferenceLine y={0} stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: '破產警戒線', fill: '#ef4444', fontSize: 12 }} />
-
-            {/* Outer Fan P10-P90 */}
-            <Area
-              type="monotone"
-              dataKey="range90_10"
-              name="range90_10"
-              stroke="none"
-              fill="var(--accent-primary)"
-              fillOpacity={0.15}
-            />
-
-            {/* Inner Fan P25-P75 */}
-            <Area
-              type="monotone"
-              dataKey="range75_25"
-              name="range75_25"
-              stroke="none"
-              fill="var(--accent-primary)"
-              fillOpacity={0.3}
-            />
-
-            {/* Median Line P50 */}
-            <Line
-              type="monotone"
-              dataKey="median"
-              name="median"
-              stroke="var(--accent-primary)"
-              strokeWidth={3}
-              dot={false}
-              activeDot={{ r: 6 }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* 列印專用版本 - 固定寬高，停用動畫，無 ResponsiveContainer */}
-      <div className="only-print justify-center w-full" style={{ height: "350px" }}>
+    <div className="h-[350px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
-          width={680}
-          height={350}
           data={formattedData}
           margin={{ top: 10, right: 10, left: 20, bottom: 15 }}
         >
@@ -141,9 +60,28 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
             tickFormatter={(val) => `${val} 萬`}
             dx={-10}
           />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "rgba(26, 35, 50, 0.95)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "12px",
+              boxShadow: "var(--shadow-card)",
+              color: "var(--text-primary)",
+            }}
+            labelFormatter={(label) => `📉 退場第 ${label} 年`}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            formatter={(value: any, name: any) => {
+              if (name === "median") return [formatTWD(Number(value) * 10000), "資產中位數 (P50)"];
+              if (name === "range75_25") return [`${formatTWD(value[0] * 10000)} ~ ${formatTWD(value[1] * 10000)}`, "大概率落點區 (P25 - P75)"];
+              if (name === "range90_10") return [`${formatTWD(value[0] * 10000)} ~ ${formatTWD(value[1] * 10000)}`, "極端狀況區 (P10 - P90)"];
+              return [value, name];
+            }}
+          />
           
           <ReferenceLine y={0} stroke="#ef4444" strokeWidth={2} strokeDasharray="5 5" label={{ position: 'insideTopLeft', value: '破產警戒線', fill: '#ef4444', fontSize: 12 }} />
 
+          {/* Outer Fan P10-P90 */}
           <Area
             type="monotone"
             dataKey="range90_10"
@@ -151,9 +89,9 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
             stroke="none"
             fill="var(--accent-primary)"
             fillOpacity={0.15}
-            isAnimationActive={false}
           />
 
+          {/* Inner Fan P25-P75 */}
           <Area
             type="monotone"
             dataKey="range75_25"
@@ -161,9 +99,9 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
             stroke="none"
             fill="var(--accent-primary)"
             fillOpacity={0.3}
-            isAnimationActive={false}
           />
 
+          {/* Median Line P50 */}
           <Line
             type="monotone"
             dataKey="median"
@@ -172,10 +110,9 @@ export default function FanChart({ data }: { data: PercentileData[] }) {
             strokeWidth={3}
             dot={false}
             activeDot={{ r: 6 }}
-            isAnimationActive={false}
           />
         </ComposedChart>
-      </div>
-    </>
+      </ResponsiveContainer>
+    </div>
   );
 }
