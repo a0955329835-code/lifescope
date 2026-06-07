@@ -261,6 +261,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
   animation: blink 0.8s ease-in-out 3;
 }
 
+.only-print {
+  display: none !important;
+}
+
 /* 一鍵列印理財報告規劃書樣式 (@media print) */
 @media print {
   /* 重定義主題變數為列印友善的淺色系 */
@@ -394,17 +398,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
     fill: #475569 !important;
   }
 
-  /* 強制 Recharts 圖表縮放以適應列印寬度，防止超出邊框與高度塌陷 */
-  .recharts-responsive-container,
-  .recharts-wrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 320px !important;
-  }
-  .recharts-wrapper svg {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 100% !important;
+  /* 顯示列印專用圖表，隱藏螢幕專用圖表 */
+  .only-print {
+    display: flex !important;
   }
 
   .no-print {
