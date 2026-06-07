@@ -76,18 +76,18 @@ export default function BasicTab({
       />
 
       {/* 🏦 理專進階實務建議設定 */}
-      <div className="mt-6 border-t pt-5 mb-5" style={{ borderColor: "var(--border-subtle)" }}>
+      <div className="mt-8 mb-5 border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
         <button
           type="button"
           onClick={() => setIsBankerOpen(!isBankerOpen)}
-          className="w-full flex items-center justify-between font-semibold text-sm outline-none cursor-pointer py-1"
-          style={{ color: "var(--text-secondary)" }}
+          className="w-full flex items-center justify-between font-bold text-base outline-none cursor-pointer text-left"
+          style={{ color: "var(--text-primary)" }}
         >
           <span className="flex items-center gap-2">
-            <span className="w-1.5 h-4 rounded-full bg-amber-500" />
+            <span className="w-1.5 h-4 rounded-full shadow-sm" style={{ background: "var(--accent-warning)" }} />
             🏦 理專進階實務建議設定
           </span>
-          <span className={`text-[10px] transition-transform duration-300 ${isBankerOpen ? "rotate-180" : ""}`}>
+          <span className={`text-xs transition-transform duration-300 ${isBankerOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }}>
             ▼
           </span>
         </button>

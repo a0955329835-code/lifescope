@@ -46,15 +46,16 @@ export default function GoalPlanner({
   return (
     <div className="glass-card p-5 transition-all">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between font-semibold text-base outline-none cursor-pointer"
-        style={{ color: "var(--text-secondary)" }}
+        className="w-full flex items-center justify-between font-bold text-base outline-none cursor-pointer text-left"
+        style={{ color: "var(--text-primary)" }}
       >
         <span className="flex items-center gap-2">
-          <span className="w-1.5 h-4 rounded-full bg-emerald-500" />
+          <span className="w-1.5 h-4 rounded-full shadow-sm" style={{ background: "var(--accent-success)" }} />
           🎯 退休目標倒推規劃 (FIRE Goal Planner)
         </span>
-        <span className={`text-xs transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}>
+        <span className={`text-xs transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }}>
           ▼
         </span>
       </button>
