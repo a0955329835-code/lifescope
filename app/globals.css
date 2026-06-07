@@ -263,12 +263,68 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 /* 一鍵列印理財報告規劃書樣式 (@media print) */
 @media print {
-  /* 隱藏非報表區塊 */
-  header, footer, nav, button, .tab-button, .lg\:col-span-4, .btn-accent, .btn-secondary, input, select, .mt-6.pt-5.border-t {
+  /* 重定義主題變數為列印友善的淺色系 */
+  :root {
+    --bg-primary: #ffffff !important;
+    --bg-secondary: #f8fafc !important;
+    --bg-card: #ffffff !important;
+    --bg-card-hover: #ffffff !important;
+    --bg-elevated: #ffffff !important;
+    --text-primary: #0b0f1a !important;
+    --text-secondary: #475569 !important;
+    --text-muted: #64748b !important;
+    --border-subtle: #e2e8f0 !important;
+    --border-accent: #cbd5e1 !important;
+    --shadow-card: none !important;
+    --shadow-glow: none !important;
+  }
+
+  /* 設定每頁列印的上下左右邊界，防止內容接續時貼頂 */
+  @page {
+    margin: 20mm 15mm;
+  }
+
+  /* 隱藏非報表區塊、按鈕、滑動條與切換開關 */
+  header, footer, nav, button, .tab-button, .lg\:col-span-4, .btn-accent, .btn-secondary, .no-print, input[type="range"], input[type="checkbox"], .mt-6.pt-5.border-t {
     display: none !important;
   }
 
-  /* 強制網頁印出背景顏色與漸層 */
+  /* 將數值輸入框樣式化為無框純文字以利顯示值 */
+  input[type="text"], input[type="number"] {
+    display: inline-block !important;
+    border: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #0b0f1a !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+    font-weight: 600 !important;
+    text-align: right !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+  }
+
+  /* 將下拉選單樣式化為純文字 */
+  select {
+    display: inline-block !important;
+    border: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #0b0f1a !important;
+    padding: 0 !important;
+    font-size: inherit !important;
+    font-weight: 600 !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    pointer-events: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+  }
+
+  /* 強制網頁印出背景顏色 */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -276,6 +332,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
   body {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #0b0f1a !important;
   }
 
@@ -294,6 +351,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
   .glass-card {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     color: #0b0f1a !important;
     box-shadow: none !important;
@@ -301,8 +359,18 @@ input[type="range"]::-webkit-slider-thumb:hover {
     margin-bottom: 20px !important;
   }
 
+  /* 覆蓋可能自帶深色 background inline style 的容器，統一改為淺灰或透明 */
+  .lg\:col-span-8 div[style*="background"],
+  .glass-card div[style*="background"] {
+    background: #f8fafc !important;
+    background-color: #f8fafc !important;
+    color: #0b0f1a !important;
+    border-color: #e2e8f0 !important;
+  }
+
   .stat-card {
     background: #f8fafc !important;
+    background-color: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
     color: #0b0f1a !important;
   }

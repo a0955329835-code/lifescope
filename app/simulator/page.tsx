@@ -354,7 +354,7 @@ function SimulatorContent() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-6 p-1 rounded-xl w-fit" style={{ background: "var(--bg-secondary)" }}>
+          <div className="flex gap-2 mb-6 p-1 rounded-xl w-fit no-print" style={{ background: "var(--bg-secondary)" }}>
             <button id="tab-basic" className={`tab-button ${activeTab === "basic" ? "active" : ""}`} onClick={() => setActiveTab("basic")}>
               📈 複利試算
             </button>
