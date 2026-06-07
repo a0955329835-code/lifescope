@@ -1,4 +1,4 @@
-import { BasicParams } from "./calculator";
+import { BasicParams, HousingParams, MCParams } from "./calculator";
 
 // localStorage 劇本管理
 export interface Scenario {
@@ -7,32 +7,11 @@ export interface Scenario {
   createdAt: string;
   updatedAt: string;
   params: BasicParams;
-  housingParams?: {
-    housePrice: number;
-    downPaymentPercent: number;
-    loanRate: number;
-    loanYears: number;
-    monthlyRent: number;
-    rentIncreaseRate: number;
-    investReturn: number;
-    maintenanceRate: number;
-    yearsToCompare: number;
-    initialCapital: number;
-    houseAppreciationRate: number;
-  };
-  mcParams?: {
-    phase: string;
-    volatility: number;
-    scenarioId: string;
-    blackSwanYear: number;
-    blackSwanDrop: number;
-    jumpProbability: number;
-    jumpImpact: number;
-    isDynamic: boolean;
-    dynamicRatio: number;
-  };
+  housingParams?: HousingParams;
+  mcParams?: MCParams;
   lifeStages?: { endYear: number; familySize: number }[];
 }
+
 
 const STORAGE_KEY = 'lifescope_scenarios';
 const MAX_FREE_SCENARIOS = 3;

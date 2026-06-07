@@ -19,6 +19,8 @@ import {
   formatNumber,
   calculateMonthlyMortgage,
   calculateMonthlyLoanPayment,
+  MCParams,
+  MCResult,
 } from "@/lib/calculator";
 import {
   getScenarios,
@@ -27,6 +29,14 @@ import {
   canSaveMore,
   Scenario,
 } from "@/lib/scenarios";
+import {
+  CompactInput,
+  StatCard,
+} from "@/components/simulator/SimulatorInputs";
+import BasicTab from "@/components/simulator/BasicTab";
+import HousingTab from "@/components/simulator/HousingTab";
+import MonteCarloTab, { CRISIS_SCENARIOS } from "@/components/simulator/MonteCarloTab";
+import ScenarioManager from "@/components/simulator/ScenarioManager";
 
 const ETF_PRESETS = [
   { name: "VOO/SPY (美股大盤)", return: 10, vol: 15 },
@@ -34,14 +44,6 @@ const ETF_PRESETS = [
   { name: "VT (全球股市)", return: 8, vol: 14 },
   { name: "0050 (台灣50)", return: 9, vol: 16 },
   { name: "保守股債配置", return: 6, vol: 8 }
-];
-
-const CRISIS_SCENARIOS = [
-  { id: "none", name: "祈禱世界和平 (無突發崩盤)", events: [], description: "風平浪靜地度過，僅受預設市場波動率影響。" },
-  { id: "custom", name: "設定單次破釜沉舟打擊 (自訂)", events: [], description: "由你自行決定在未來的哪一年，遭遇多達多少比例的單次毀滅性崩盤。" },
-  { id: "dotcom_2008", name: "千禧年雙重打擊 (網路泡沫 + 金融海嘯)", events: [{ year: 0, drop: 40 }, { year: 8, drop: 50 }], description: "模擬爆發當年遭遇網路泡沫 (-40%)，好不容易存活了 8 年，立刻又遭遇金融海嘯 (-50%) 的煉獄期。" },
-  { id: "great_depression", name: "1929 經濟大恐慌 (連跌三年重創)", events: [{ year: 0, drop: 30 }, { year: 1, drop: 25 }, { year: 2, drop: 25 }], description: "模擬美股史上最慘烈的連環熊市，爆發後連續三年分別遭遇 -30%、-25%、-25% 的毀滅性連擊。" },
-  { id: "covid_inflation", name: "新冠恐慌與通膨緊縮 (短期雙跌)", events: [{ year: 0, drop: 30 }, { year: 2, drop: 25 }], description: "模擬爆發當年引發疫情式閃崩 (-30%)，短暫恢復後，短短兩年內隨即迎來通膨緊縮股災 (-25%)。" },
 ];
 
 const STAGE_LABELS = ["🧒 年輕養成期", "👨‍👩‍👧 家庭壯年期", "🧓 退休空巢期"];
@@ -54,196 +56,6 @@ const FAMILY_OPTIONS = [
   { value: 6, label: "🏡 三代同堂 (6人+)" },
 ];
 
-function SliderInput({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-  unit,
-  id,
-  hint,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-  step: number;
-  unit: string;
-  id: string;
-  hint?: string;
-}) {
-  return (
-    <div className="mb-5">
-      <div className="flex justify-between items-center mb-1.5">
-        <label htmlFor={id} className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          {label}
-        </label>
-        <div className="flex items-center gap-1.5">
-          <input
-            type="number"
-            id={id}
-            value={value}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="input-field text-right !w-24 !py-1 text-sm number-display"
-            min={min}
-            max={max}
-            step={step}
-          />
-          <span className="text-sm ml-1" style={{ color: "var(--text-muted)" }}>{unit}</span>
-        </div>
-      </div>
-      <input
-        type="range"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full"
-      />
-      {hint && <p className="text-[11px] mt-1.5 opacity-60 leading-relaxed" style={{ color: "var(--text-muted)" }}>{hint}</p>}
-    </div>
-  );
-}
-
-// --- Unified UI Components ---
-
-function SectionHeader({ icon, title, colorHex, bgColorHex }: { icon: string, title: string, colorHex: string, bgColorHex: string }) {
-  return (
-    <h2 className="font-bold text-lg mb-5 flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-      <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm shadow-sm" style={{ background: bgColorHex, color: colorHex }}>
-        {icon}
-      </span>
-      {title}
-    </h2>
-  );
-}
-
-function SubSectionHeader({ title, colorHex, children }: { title: string, colorHex: string, children?: React.ReactNode }) {
-  return (
-    <div className="mt-8 mb-5 border-t pt-6" style={{ borderColor: "var(--border-subtle)" }}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-          <span className="w-1.5 h-4 rounded-full shadow-sm" style={{ background: colorHex }} />
-          {title}
-        </h3>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function InfoBox({ children, colorHex, dashed = false, className = "" }: { children: React.ReactNode, colorHex: string, dashed?: boolean, className?: string }) {
-  return (
-    <div
-      className={`p-3.5 rounded-xl mb-4 ${className}`}
-      style={{
-        background: `${colorHex}08`,
-        border: `1px ${dashed ? 'dashed' : 'solid'} ${colorHex}30`
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function ToggleSwitch({ checked, onChange, colorClass }: { checked: boolean, onChange: (checked: boolean) => void, colorClass: string }) {
-  return (
-    <label className="relative inline-flex items-center cursor-pointer">
-      <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 ${colorClass}`}></div>
-    </label>
-  );
-}
-
-// --- End Unified UI Components ---
-
-
-function LeverageBlock({ 
-  isLeverageEnabled, 
-  setIsLeverageEnabled, 
-  basicParams, 
-  updateBasic, 
-  computedMonthlyLoan 
-}: { 
-  isLeverageEnabled: boolean;
-  setIsLeverageEnabled: (v: boolean) => void;
-  basicParams: BasicParams;
-  updateBasic: (k: keyof BasicParams, v: number) => void;
-  computedMonthlyLoan: number;
-}) {
-  return (
-    <>
-      <SubSectionHeader title="⚖️ 財務槓桿策略 (信貸)" colorHex="#3b82f6">
-        <ToggleSwitch
-          checked={isLeverageEnabled}
-          onChange={(v) => {
-            setIsLeverageEnabled(v);
-            if (!v) updateBasic("leverageAmount", 0);
-          }}
-          colorClass="peer-checked:bg-blue-500"
-        />
-      </SubSectionHeader>
-
-      {isLeverageEnabled && (
-        <InfoBox colorHex="#3b82f6" dashed>
-          <div className="p-2.5 mb-5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs leading-relaxed text-amber-600 dark:text-amber-400">
-            ⚠️ <b>現金流提醒：</b> 系統已自動從「月投資額」中扣除貸款本息。若投資額不足，將會自動變賣資產償還。
-          </div>
-          <SliderInput id="leverageAmount" label="借貸本金" value={basicParams.leverageAmount || 0} onChange={(v) => updateBasic("leverageAmount", v)} min={0} max={20000000} step={100000} unit="元" />
-          <SliderInput id="leverageRate" label="貸款年利率" value={basicParams.leverageRate || 0} onChange={(v) => updateBasic("leverageRate", v)} min={1} max={15} step={0.1} unit="%" />
-          <SliderInput id="leverageYears" label="貸款年限" value={basicParams.leverageYears || 0} onChange={(v) => updateBasic("leverageYears", v)} min={1} max={30} step={1} unit="年" />
-          <SliderInput id="leverageRecurYears" label="自動續借頻率" value={basicParams.leverageRecurYears || 0} onChange={(v) => updateBasic("leverageRecurYears", v)} min={0} max={10} step={1} unit="年" hint="0 代表不續借。每隔 X 年自動補足本金並重置債務。" />
-          
-          {(basicParams.leverageAmount || 0) > 0 && (basicParams.leverageYears || 0) > 0 && (
-            <div className="mt-5 p-2.5 rounded-lg text-xs font-medium flex justify-between items-center bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <span>💡 試算每月還本付息：</span>
-              <span className="text-sm font-bold">約 {formatNumber(computedMonthlyLoan)} 元</span>
-            </div>
-          )}
-        </InfoBox>
-      )}
-    </>
-  );
-}
-
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
-  return (
-    <div className="stat-card">
-      <p className="text-sm font-medium mb-1" style={{ color: "var(--text-muted)" }}>{label}</p>
-      <p className="text-2xl sm:text-3xl font-bold number-display" style={{ color: color || "var(--text-primary)" }}>{value}</p>
-      {sub && <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{sub}</p>}
-    </div>
-  );
-}
-
-function CompactInput({
-  label, value, onChange, unit, step = 1, min, max,
-}: {
-  label: string; value: number; onChange: (v: number) => void;
-  unit: string; step?: number; min?: number; max?: number;
-}) {
-  return (
-    <div>
-      <label className="text-xs block mb-1 font-medium" style={{ color: "var(--text-muted)" }}>{label}</label>
-      <div className="flex items-center gap-1.5">
-        <input
-          type="number"
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          step={step}
-          min={min}
-          max={max}
-          className="input-field !py-1.5 text-sm number-display flex-1 text-right"
-        />
-        <span className="text-xs shrink-0 w-4" style={{ color: "var(--text-muted)" }}>{unit}</span>
-      </div>
-    </div>
-  );
-}
 
 function SimulatorContent() {
   const searchParams = useSearchParams();
@@ -309,7 +121,7 @@ function SimulatorContent() {
     setScenarios(getScenarios());
   }, []);
 
-  const [mcParams, setMcParams] = useState({
+  const [mcParams, setMcParams] = useState<MCParams>({
     phase: "accumulation",
     volatility: 15,
     isScenarioEnabled: false,
@@ -322,14 +134,13 @@ function SimulatorContent() {
     isDynamic: false,
     dynamicRatio: 20,
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [mcResult, setMcResult] = useState<any>(null);
+  const [mcResult, setMcResult] = useState<MCResult | null>(null);
   const [isLoadingMC, setIsLoadingMC] = useState(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateMC = useCallback((key: string, val: any) => {
+  const updateMC = useCallback(<K extends keyof MCParams>(key: K, val: MCParams[K]) => {
     setMcParams((p) => ({ ...p, [key]: val }));
   }, []);
+
 
   const runMonteCarlo = async () => {
     setIsLoadingMC(true);
@@ -450,10 +261,8 @@ function SimulatorContent() {
       setMcParams((prev) => ({
         ...prev,
         ...scenario.mcParams,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        isJumpEnabled: (scenario.mcParams as any).isJumpEnabled || false,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        isScenarioEnabled: (scenario.mcParams as any).isScenarioEnabled || false,
+        isJumpEnabled: scenario.mcParams?.isJumpEnabled || false,
+        isScenarioEnabled: scenario.mcParams?.isScenarioEnabled || false,
       }));
     }
     if (scenario.lifeStages) {
@@ -463,6 +272,7 @@ function SimulatorContent() {
     setSaveMessage(`✅ 已載入「${scenario.name}」`);
     setTimeout(() => setSaveMessage(""), 2000);
   };
+
 
   const handleDelete = (id: string) => {
     deleteScenario(id);
@@ -545,274 +355,48 @@ function SimulatorContent() {
             {/* ===== Left Panel: Tab-Specific Controls ===== */}
             <div className="lg:col-span-4">
               <div className="glass-card p-6 sticky top-20">
-                {/* --- 複利試算 --- */}
                 {activeTab === "basic" && (
-                  <>
-                    <SectionHeader icon="⚙" title="現況與收支設定" colorHex="var(--accent-primary)" bgColorHex="var(--accent-primary-dim)" />
-                    <SliderInput id="monthlyIncome" label="月收入" value={basicParams.monthlyIncome} onChange={(v) => updateBasic("monthlyIncome", v)} min={0} max={2000000} step={5000} unit="元" />
-                    <SliderInput id="monthlyExpense" label="月支出" value={basicParams.monthlyExpense} onChange={(v) => updateBasic("monthlyExpense", v)} min={0} max={1000000} step={5000} unit="元" />
-                    <SliderInput id="monthlyInvestment" label="月投資額" value={basicParams.monthlyInvestment} onChange={(v) => updateBasic("monthlyInvestment", v)} min={0} max={1000000} step={5000} unit="元" />
-                    
-                    <LeverageBlock 
-                      isLeverageEnabled={isLeverageEnabled} 
-                      setIsLeverageEnabled={setIsLeverageEnabled}
-                      basicParams={basicParams}
-                      updateBasic={updateBasic}
-                      computedMonthlyLoan={computedMonthlyLoan}
-                    />
-
-                    <SubSectionHeader title="🌟 人生重大事件 (Life Events)" colorHex="#ec4899">
-                      <ToggleSwitch checked={basicParams.isEventsEnabled || false} onChange={(v) => updateBasic("isEventsEnabled", v)} colorClass="peer-checked:bg-pink-500" />
-                    </SubSectionHeader>
-
-                    {basicParams.isEventsEnabled && (
-                      <InfoBox colorHex="#ec4899" dashed>
-                        <div className="flex justify-end mb-3">
-                          <button
-                            onClick={() => {
-                              const newEvents = [...(basicParams.customEvents || []), { year: 5, name: "買車", amount: -800000 }];
-                              updateBasic("customEvents", newEvents);
-                            }}
-                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white/10 border border-pink-500/30 hover:border-pink-500 transition-colors text-pink-600 dark:text-pink-400"
-                          >
-                            ＋ 新增事件
-                          </button>
-                        </div>
-
-                        {(basicParams.customEvents || []).length === 0 ? (
-                          <p className="text-xs text-center text-pink-600/70 dark:text-pink-400/70 py-4">
-                            尚未新增事件。可加入結婚、買車或收到遺產等一次性現金流。
-                          </p>
-                        ) : (
-                          <div className="space-y-3 mb-4">
-                            {(basicParams.customEvents || []).map((ev, i) => (
-                              <div key={i} className="flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-white/50 dark:bg-black/20 border border-pink-500/20">
-                                <div className="flex items-center gap-1 w-20">
-                                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>第</span>
-                                  <input
-                                    type="number"
-                                    value={ev.year}
-                                    onChange={(e) => {
-                                      const newEvents = [...(basicParams.customEvents || [])];
-                                      newEvents[i].year = Math.max(1, Number(e.target.value));
-                                      updateBasic("customEvents", newEvents);
-                                    }}
-                                    className="input-field !py-1 !px-2 text-xs text-center flex-1 min-w-0"
-                                  />
-                                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>年</span>
-                                </div>
-                                <input
-                                  type="text"
-                                  value={ev.name}
-                                  onChange={(e) => {
-                                    const newEvents = [...(basicParams.customEvents || [])];
-                                    newEvents[i].name = e.target.value;
-                                    updateBasic("customEvents", newEvents);
-                                  }}
-                                  className="input-field !py-1 !px-2 text-xs flex-1 min-w-[80px]"
-                                  placeholder="事件名稱"
-                                />
-                                <input
-                                  type="number"
-                                  value={ev.amount}
-                                  onChange={(e) => {
-                                    const newEvents = [...(basicParams.customEvents || [])];
-                                    newEvents[i].amount = Number(e.target.value);
-                                    updateBasic("customEvents", newEvents);
-                                  }}
-                                  className={`input-field !py-1 !px-2 text-xs w-28 text-right font-medium ${ev.amount >= 0 ? "text-green-500" : "text-red-400"}`}
-                                  placeholder="金額 (+收入/-支出)"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const newEvents = [...(basicParams.customEvents || [])];
-                                    newEvents.splice(i, 1);
-                                    updateBasic("customEvents", newEvents);
-                                  }}
-                                  className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/20 text-red-500 transition-colors"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <p className="text-[11px] opacity-60 leading-relaxed mt-2" style={{ color: "var(--text-muted)" }}>
-                          💡 正數代表一筆意外之財 (如遺產)，負數代表大筆支出 (如買車)。這將在該年直接加減您的淨資產與投入本金。
-                        </p>
-                      </InfoBox>
-                    )}
-
-                  </>
+                  <BasicTab
+                    basicParams={basicParams}
+                    updateBasic={updateBasic}
+                    isLeverageEnabled={isLeverageEnabled}
+                    setIsLeverageEnabled={setIsLeverageEnabled}
+                    computedMonthlyLoan={computedMonthlyLoan}
+                  />
                 )}
 
-                {/* --- 租屋 vs 買房 --- */}
                 {activeTab === "housing" && (
-                  <>
-                    <SectionHeader icon="🏠" title="全局資金與時程" colorHex="var(--accent-secondary)" bgColorHex="var(--accent-secondary-dim)" />
-                    <SliderInput id="initialCapital" label="初始總資金" value={housingParams.initialCapital} onChange={(v) => updateHousing("initialCapital", v)} min={1000000} max={150000000} step={500000} unit="元" hint="租屋全數投資；買房先付頭期，剩餘投資。" />
-                    <SliderInput id="yearsToCompare" label="比較年數" value={housingParams.yearsToCompare} onChange={(v) => updateHousing("yearsToCompare", v)} min={5} max={50} step={5} unit="年" />
-                    <SliderInput id="investReturn" label="投資報酬率" value={housingParams.investReturn} onChange={(v) => updateHousing("investReturn", v)} min={0} max={15} step={0.5} unit="%" hint="未動用資金與每月結餘投入市場的預期報酬率" />
-
-                    <SubSectionHeader title="買房專屬參數" colorHex="var(--accent-secondary)" />
-                    <SliderInput id="housePrice" label="預計購買總價" value={housingParams.housePrice} onChange={(v) => updateHousing("housePrice", v)} min={3000000} max={300000000} step={1000000} unit="元" />
-                      <SliderInput id="downPaymentPercent" label="頭期款成數" value={housingParams.downPaymentPercent} onChange={(v) => updateHousing("downPaymentPercent", v)} min={10} max={50} step={5} unit="%" />
-                      <SliderInput id="loanRate" label="房貸利率" value={housingParams.loanRate} onChange={(v) => updateHousing("loanRate", v)} min={1} max={5} step={0.1} unit="%" hint="目前首購房貸地板價約 2.185 起" />
-                      <SliderInput id="loanYears" label="貸款年限" value={housingParams.loanYears} onChange={(v) => updateHousing("loanYears", v)} min={10} max={40} step={5} unit="年" />
-
-                      <InfoBox colorHex="#8b5cf6" dashed>
-                        <p className="text-sm font-medium flex justify-between items-center" style={{ color: "var(--accent-secondary)" }}>
-                          <span>💡 每月房貸本息攤還試算</span>
-                          <span className="text-base font-bold">{formatNumber(computedMortgage)} 元</span>
-                        </p>
-                      </InfoBox>
-
-                      <SliderInput id="houseAppreciationRate" label="房價年漲幅" value={housingParams.houseAppreciationRate} onChange={(v) => updateHousing("houseAppreciationRate", v)} min={-5} max={10} step={0.5} unit="%" hint="保守預估 2~3%" />
-                      <SliderInput id="maintenanceRate" label="年維護成本" value={housingParams.maintenanceRate} onChange={(v) => updateHousing("maintenanceRate", v)} min={0} max={3} step={0.1} unit="%" hint="抓房價 0.5~1% 作為稅金與修繕基金" />
-
-                    <SubSectionHeader title="租屋專屬參數" colorHex="var(--accent-primary)" />
-                    <SliderInput id="monthlyRent" label="預計月租金" value={housingParams.monthlyRent} onChange={(v) => updateHousing("monthlyRent", v)} min={5000} max={500000} step={5000} unit="元" />
-                    <SliderInput id="rentIncreaseRate" label="年租金漲幅" value={housingParams.rentIncreaseRate} onChange={(v) => updateHousing("rentIncreaseRate", v)} min={0} max={5} step={0.5} unit="%" />
-                  </>
+                  <HousingTab
+                    housingParams={housingParams}
+                    updateHousing={updateHousing}
+                    computedMortgage={computedMortgage}
+                  />
                 )}
 
-                {/* --- 蒙地卡羅 --- */}
                 {activeTab === "mc" && (
-                  <>
-                    <SectionHeader icon="🎲" title="壓力測試參數" colorHex="#f59e0b" bgColorHex="rgba(245, 158, 11, 0.15)" />
-
-                    <div className="flex gap-2 mb-5 p-1 rounded-xl" style={{ background: "var(--bg-secondary)" }}>
-                      <button
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${mcParams.phase === "accumulation" ? "bg-white text-slate-900 shadow-sm" : "opacity-60 hover:opacity-100"}`}
-                        onClick={() => updateMC("phase", "accumulation")}
-                      >
-                        💪 財富累積期
-                      </button>
-                      <button
-                        className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${mcParams.phase === "decumulation" ? "bg-white text-slate-900 shadow-sm" : "opacity-60 hover:opacity-100"}`}
-                        onClick={() => updateMC("phase", "decumulation")}
-                      >
-                        🌴 退休提領期
-                      </button>
-                    </div>
-
-                    <InfoBox colorHex="#94a3b8">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {mcParams.phase === "accumulation"
-                          ? "💡 模擬工作期間：每月持續投入月投資額，不會變賣資產。破產機率為 0。"
-                          : "⚠️ 模擬退休期間：停止工作投入，每月變賣資產支付月支出，測驗資產存活率。"}
-                      </p>
-                    </InfoBox>
-
-                    {mcParams.phase === "accumulation" ? (
-                      <SliderInput id="monthlyInvestment" label="每月繼續投資" value={basicParams.monthlyInvestment} onChange={(v) => updateBasic("monthlyInvestment", v)} min={0} max={1000000} step={5000} unit="元" />
-                    ) : (
-                      <SliderInput id="monthlyExpense" label="退休每月支出" value={basicParams.monthlyExpense} onChange={(v) => updateBasic("monthlyExpense", v)} min={0} max={1000000} step={5000} unit="元" />
-                    )}
-
-                    <LeverageBlock 
-                      isLeverageEnabled={isLeverageEnabled} 
-                      setIsLeverageEnabled={setIsLeverageEnabled}
-                      basicParams={basicParams}
-                      updateBasic={updateBasic}
-                      computedMonthlyLoan={computedMonthlyLoan}
-                    />
-
-                    <SubSectionHeader title="📈 市場風險設定" colorHex="#f97316" />
-                    <SliderInput id="volatility" label="預估波動率 (市場風險)" value={mcParams.volatility} onChange={(v) => updateMC("volatility", v)} min={0} max={40} step={1} unit="%" hint="大盤歷史波動約 15%。含公債配置可降至 5~10%。" />
-
-                    <SubSectionHeader title="歷史災難壓力測試 (黑天鵝劇本)" colorHex="#ef4444">
-                      <ToggleSwitch checked={mcParams.isScenarioEnabled} onChange={(v) => updateMC("isScenarioEnabled", v)} colorClass="peer-checked:bg-red-500" />
-                    </SubSectionHeader>
-
-                    {mcParams.isScenarioEnabled && (
-                      <div className="mb-4">
-                        <select
-                          className="w-full p-2.5 rounded-lg border text-sm outline-none mb-3 font-medium transition-colors hover:border-[var(--accent-primary)] focus:border-[var(--accent-primary)]"
-                          style={{ background: "var(--bg-secondary)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }}
-                          value={mcParams.scenarioId}
-                          onChange={(e) => updateMC("scenarioId", e.target.value)}
-                        >
-                          {CRISIS_SCENARIOS.filter(s => s.id !== "none").map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        <InfoBox colorHex="#ef4444" dashed>
-                          <p className="text-xs mb-4 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                            💡 {CRISIS_SCENARIOS.find(s => s.id === mcParams.scenarioId)?.description || CRISIS_SCENARIOS.find(s => s.id === "custom")?.description}
-                          </p>
-                          <SliderInput id="blackSwanYear" label="劇本引爆時機 (第 X 年)" value={mcParams.blackSwanYear} onChange={(v) => updateMC("blackSwanYear", v)} min={1} max={basicParams.investmentYears} step={1} unit="年" hint="拉動決定災難何時降臨。" />
-                          {mcParams.scenarioId === "custom" && (
-                            <SliderInput id="blackSwanDrop" label="當年崩盤跌幅" value={mcParams.blackSwanDrop} onChange={(v) => updateMC("blackSwanDrop", v)} min={10} max={80} step={5} unit="%" />
-                          )}
-                        </InfoBox>
-                      </div>
-                    )}
-
-                    <SubSectionHeader title="跳躍擴散模型 (每年隨機崩盤)" colorHex="#6366f1">
-                      <ToggleSwitch checked={mcParams.isJumpEnabled} onChange={(v) => updateMC("isJumpEnabled", v)} colorClass="peer-checked:bg-indigo-500" />
-                    </SubSectionHeader>
-
-                    {mcParams.isJumpEnabled && (
-                      <InfoBox colorHex="#6366f1" dashed>
-                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>💡 除下方指定的歷史劇本外，每年額外觸發無預警黑天鵝的機率與跌幅。</p>
-                        <SliderInput id="jumpProbability" label="每年發生機率" value={mcParams.jumpProbability} onChange={(v) => updateMC("jumpProbability", v)} min={1} max={20} step={1} unit="%" />
-                        <SliderInput id="jumpImpact" label="單次崩盤跌幅" value={mcParams.jumpImpact} onChange={(v) => updateMC("jumpImpact", v)} min={5} max={50} step={5} unit="%" />
-                      </InfoBox>
-                    )}
-
-                    <SubSectionHeader title="動態提領防禦 (Dynamic Spending)" colorHex="#10b981">
-                      <ToggleSwitch checked={mcParams.isDynamic} onChange={(v) => updateMC("isDynamic", v)} colorClass="peer-checked:bg-emerald-500" />
-                    </SubSectionHeader>
-
-                    {mcParams.isDynamic && (
-                      <InfoBox colorHex="#10b981" dashed>
-                        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>🛡️ 當遭遇市場下跌的年份，系統將自動縮減該年度的生活費，此防禦機制可大幅提升退休資產的存活機率！</p>
-                        <SliderInput id="dynamicRatio" label="縮減提領比例" value={mcParams.dynamicRatio} onChange={(v) => updateMC("dynamicRatio", v)} min={5} max={50} step={5} unit="%" />
-                      </InfoBox>
-                    )}
-
-                    <button
-                      onClick={runMonteCarlo}
-                      disabled={isLoadingMC}
-                      className="w-full mt-5 py-3.5 rounded-xl font-bold flex items-center justify-center transition-all disabled:opacity-50"
-                      style={{ background: "var(--accent-primary)", color: "white" }}
-                    >
-                      {isLoadingMC ? (
-                        <span className="flex items-center gap-2">
-                          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                          量化模擬中...
-                        </span>
-                      ) : "🚀 執行 1,000 次蒙地卡羅模擬"}
-                    </button>
-                  </>
+                  <MonteCarloTab
+                    mcParams={mcParams}
+                    updateMC={updateMC}
+                    basicParams={basicParams}
+                    updateBasic={updateBasic}
+                    isLeverageEnabled={isLeverageEnabled}
+                    setIsLeverageEnabled={setIsLeverageEnabled}
+                    computedMonthlyLoan={computedMonthlyLoan}
+                    runMonteCarlo={runMonteCarlo}
+                    isLoadingMC={isLoadingMC}
+                  />
                 )}
 
-                {/* Save Scenario - for basic and housing */}
                 {activeTab !== "mc" && (
-                  <div className="mt-6 pt-5 border-t" style={{ borderColor: "var(--border-subtle)" }}>
-                    <p className="text-xs font-medium mb-2" style={{ color: "var(--text-muted)" }}>💾 儲存劇本（{scenarios.length}/3）</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="劇本名稱..."
-                        value={saveName}
-                        onChange={(e) => setSaveName(e.target.value)}
-                        className="input-field !py-2 text-sm flex-1"
-                        maxLength={20}
-                      />
-                      <button onClick={handleSave} className="btn-accent !py-2 !px-4 text-sm shrink-0">存檔</button>
-                    </div>
-                    {saveMessage && <p className="text-xs mt-2" style={{ color: "var(--accent-primary)" }}>{saveMessage}</p>}
-                    {scenarios.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {scenarios.map((s) => (
-                          <div key={s.id} className="flex items-center justify-between p-2.5 rounded-lg text-sm" style={{ background: "var(--bg-secondary)" }}>
-                            <button onClick={() => handleLoad(s)} className="text-left flex-1 truncate font-medium hover:text-[var(--accent-primary)] transition-colors" style={{ color: "var(--text-secondary)" }}>{s.name}</button>
-                            <button onClick={() => handleDelete(s.id)} className="ml-2 text-xs px-2 py-1 rounded hover:bg-red-500/20 transition-colors" style={{ color: "var(--text-muted)" }}>✕</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <ScenarioManager
+                    scenarios={scenarios}
+                    saveName={saveName}
+                    setSaveName={setSaveName}
+                    handleSave={handleSave}
+                    handleLoad={handleLoad}
+                    handleDelete={handleDelete}
+                    saveMessage={saveMessage}
+                  />
                 )}
               </div>
             </div>

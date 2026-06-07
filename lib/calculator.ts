@@ -338,3 +338,36 @@ export function calculateFIREAge(params: BasicParams, lifeStages: LifeStage[] = 
   }
   return null; // 100 年內無法達成
 }
+
+export interface MCOverlayEvent {
+  year: number;
+  drop: number;
+}
+
+export interface MCParams {
+  phase: "accumulation" | "decumulation";
+  volatility: number;
+  isScenarioEnabled: boolean;
+  scenarioId: string;
+  blackSwanYear: number;
+  blackSwanDrop: number;
+  isJumpEnabled: boolean;
+  jumpProbability: number;
+  jumpImpact: number;
+  isDynamic: boolean;
+  dynamicRatio: number;
+}
+
+export interface MCResult {
+  successRate: number;
+  medianEndingWealth: number;
+  percentilePaths: {
+    year: number;
+    p90: number;
+    p75: number;
+    p50: number;
+    p25: number;
+    p10: number;
+  }[];
+}
+
